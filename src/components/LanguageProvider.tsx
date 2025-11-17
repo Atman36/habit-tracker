@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useEffect } from 'react';
 import type { Language, TranslationContent } from '@/lib/translations';
 import { defaultLanguage, translations } from '@/lib/translations';
 import useLocalStorage from '@/lib/localStorage';
@@ -12,10 +12,23 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
+const isValidLanguage = (value: string): value is Language =>
+  Object.prototype.hasOwnProperty.call(translations, value);
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useLocalStorage<Language>('app_language', defaultLanguage);
+  const resolvedLanguage = isValidLanguage(language as string) ? language : defaultLanguage;
 
-  const value = useMemo(() => ({ language, setLanguage }), [language, setLanguage]);
+  useEffect(() => {
+    if (!isValidLanguage(language as string)) {
+      setLanguage(defaultLanguage);
+    }
+  }, [language, setLanguage]);
+
+  const value = useMemo(
+    () => ({ language: resolvedLanguage, setLanguage }),
+    [resolvedLanguage, setLanguage]
+  );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
