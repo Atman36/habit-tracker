@@ -5,31 +5,34 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Toolti
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import type { Habit, HabitStatus } from '@/lib/types';
 import { format, subDays, eachDayOfInterval, parseISO, startOfDay, isSameDay } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { enUS, ru } from 'date-fns/locale';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 
 interface ProgressChartClientProps {
   habit: Habit;
 }
 
-const chartConfigBase = {
-  completedPositive: {
-    label: 'Выполнено',
-    color: 'hsl(var(--chart-1))', // Blueish for positive
-  },
-  completedNegative: { 
-    label: 'Успешно избежал',
-    color: 'hsl(var(--chart-2))', // Greenish for avoided
-  },
-  failed: {
-    label: 'Не выполнено / Срыв',
-    color: 'hsl(var(--destructive))', // Red for failed
-  },
-} satisfies ChartConfig;
-
-
 export function ProgressChartClient({ habit }: ProgressChartClientProps) {
+  const t = useTranslations();
+  const { language } = useLanguage();
+  const dateLocale = language === 'ru' ? ru : enUS;
   const today = startOfDay(new Date());
   const last30Days = eachDayOfInterval({ start: subDays(today, 29), end: today });
+
+  const chartConfigBase: { completedPositive: ChartConfig['value']; completedNegative: ChartConfig['value']; failed: ChartConfig['value']; } = {
+    completedPositive: {
+      label: t.progressChart.positiveTicks.yes,
+      color: 'hsl(var(--chart-1))',
+    },
+    completedNegative: {
+      label: t.progressChart.negativeTicks.yes,
+      color: 'hsl(var(--chart-2))',
+    },
+    failed: {
+      label: habit.type === 'negative' ? t.progressChart.negativeTicks.fail : t.progressChart.positiveTicks.fail,
+      color: 'hsl(var(--destructive))',
+    },
+  };
 
   const chartData = last30Days.map(day => {
     const dateString = format(day, 'yyyy-MM-dd');
@@ -48,7 +51,7 @@ export function ProgressChartClient({ habit }: ProgressChartClientProps) {
     }
 
     return {
-      date: format(day, 'MMM d', { locale: ru }),
+      date: format(day, 'MMM d', { locale: dateLocale }),
       fullDate: dateString,
       value: value,
       status: status,
@@ -58,7 +61,7 @@ export function ProgressChartClient({ habit }: ProgressChartClientProps) {
   const hasAnyRelevantCompletions = habit.completions.some(c => c.status === 'completed' || c.status === 'failed');
 
   if (!habit || !hasAnyRelevantCompletions) {
-    return <p className="text-sm text-muted-foreground py-4">Нет данных о выполнении для отображения графика.</p>;
+    return <p className="text-sm text-muted-foreground py-4">{t.progressChart.noData}</p>;
   }
   
   // Dynamically set chart config based on habit type
@@ -100,9 +103,9 @@ export function ProgressChartClient({ habit }: ProgressChartClientProps) {
               ticks={[-1, 0, 1]} // Include -1 if failed is represented this way
               domain={[-1.2, 1.2]} // Adjust domain slightly for padding if using -1
               tickFormatter={(value, index) => {
-                if (value === 0) return habit.type === 'negative' ? 'Н/Д' : 'Нет';
-                if (value === 1) return habit.type === 'negative' ? 'Избежал' : 'Да';
-                if (value === -1) return habit.type === 'negative' ? 'Срыв' : 'Провал';
+                if (value === 0) return habit.type === 'negative' ? t.progressChart.negativeTicks.no : t.progressChart.positiveTicks.no;
+                if (value === 1) return habit.type === 'negative' ? t.progressChart.negativeTicks.yes : t.progressChart.positiveTicks.yes;
+                if (value === -1) return habit.type === 'negative' ? t.progressChart.negativeTicks.fail : t.progressChart.positiveTicks.fail;
                 return '';
               }}
             />
@@ -112,20 +115,20 @@ export function ProgressChartClient({ habit }: ProgressChartClientProps) {
                 indicator="dot"
                 labelFormatter={(label, payload) => {
                     if (payload && payload.length > 0 && payload[0].payload) {
-                        return format(parseISO(payload[0].payload.fullDate), "PPP", { locale: ru });
+                        return format(parseISO(payload[0].payload.fullDate), "PPP", { locale: dateLocale });
                     }
                     return label;
                 }}
                 formatter={(value, name, props) => {
                   const entry = props.payload;
                   let statusLabel = '';
-                  
+
                   if (entry.status === 'completed') {
                     statusLabel = habit.type === 'negative' ? chartConfigBase.completedNegative.label : chartConfigBase.completedPositive.label;
                   } else if (entry.status === 'failed') {
                     statusLabel = chartConfigBase.failed.label;
                   } else {
-                     statusLabel = "Нет отметки";
+                     statusLabel = t.progressChart.tooltipNoEntry;
                   }
                   return [entry.value !== 0 ? (entry.value === 1 ? "✓" : "✗") : "-", statusLabel];
                 }}

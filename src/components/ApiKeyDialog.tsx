@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KeyRound, Settings, Brain } from 'lucide-react';
+import { useTranslations } from '@/components/LanguageProvider';
 
 interface ApiKeyDialogProps {
   isOpen: boolean;
@@ -26,24 +27,25 @@ interface ApiKeyDialogProps {
 }
 
 const DEFAULT_MODEL_NAME = "deepseek/deepseek-chat";
-const DEFAULT_SYSTEM_PROMPT = "Ты - помощник по формированию привычек. Давай краткие, мотивирующие советы на русском языке для улучшения привычек пользователя.";
 
 const POPULAR_MODELS = [
-  { value: "deepseek/deepseek-chat", label: "DeepSeek Chat (Рекомендуется)" },
-  { value: "anthropic/claude-3-haiku", label: "Claude 3 Haiku" },
-  { value: "anthropic/claude-3-sonnet", label: "Claude 3 Sonnet" },
-  { value: "google/gemini-flash-1.5", label: "Gemini Flash 1.5" },
-  { value: "mistralai/mistral-7b-instruct", label: "Mistral 7B Instruct" },
-  { value: "openai/gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
-  { value: "openai/gpt-4o-mini", label: "GPT-4o Mini" },
-  { value: "meta-llama/llama-3.1-8b-instruct", label: "Llama 3.1 8B" },
-  { value: "custom", label: "Другая модель..." }
-];
+  { value: "deepseek/deepseek-chat", labelKey: 'deepseek' },
+  { value: "anthropic/claude-3-haiku", labelKey: 'claudeHaiku' },
+  { value: "anthropic/claude-3-sonnet", labelKey: 'claudeSonnet' },
+  { value: "google/gemini-flash-1.5", labelKey: 'gemini' },
+  { value: "mistralai/mistral-7b-instruct", labelKey: 'mistral' },
+  { value: "openai/gpt-3.5-turbo", labelKey: 'gpt35' },
+  { value: "openai/gpt-4o-mini", labelKey: 'gpt4o' },
+  { value: "meta-llama/llama-3.1-8b-instruct", labelKey: 'llama' },
+  { value: "custom", labelKey: 'custom' }
+] as const;
 
 export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKeyDialogProps) {
+  const t = useTranslations();
+  const defaultPrompt = t.apiDialog.defaultSystemPrompt;
   const [apiKey, setApiKey] = useState('');
   const [modelName, setModelName] = useState(DEFAULT_MODEL_NAME);
-  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+  const [systemPrompt, setSystemPrompt] = useState(defaultPrompt);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL_NAME);
   const [customModel, setCustomModel] = useState('');
 
@@ -52,7 +54,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
       setApiKey(currentSettings?.apiKey || '');
       const currentModel = currentSettings?.modelName || DEFAULT_MODEL_NAME;
       setModelName(currentModel);
-      setSystemPrompt(currentSettings?.systemPrompt || DEFAULT_SYSTEM_PROMPT);
+      setSystemPrompt(currentSettings?.systemPrompt || defaultPrompt);
       
       // Check if current model is in popular models list
       const isPopularModel = POPULAR_MODELS.some(model => model.value === currentModel);
@@ -64,7 +66,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
         setCustomModel(currentModel);
       }
     }
-  }, [isOpen, currentSettings]);
+  }, [isOpen, currentSettings, defaultPrompt]);
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
@@ -85,7 +87,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
       onSave({
         apiKey: apiKey.trim(),
         modelName: finalModelName,
-        systemPrompt: systemPrompt.trim() || DEFAULT_SYSTEM_PROMPT
+        systemPrompt: systemPrompt.trim() || defaultPrompt
       });
     }
     onClose();
@@ -97,17 +99,16 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Settings className="mr-2 h-5 w-5" />
-            Настройки OpenRouter AI
+            {t.apiDialog.title}
           </DialogTitle>
           <DialogDescription>
-            Введите ваш API ключ и выберите модель для OpenRouter, чтобы получать персональные советы от AI.
-            Ключ можно получить на сайте OpenRouter.
+            {t.apiDialog.description}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           {/* API Key */}
           <div className="space-y-2">
-            <Label htmlFor="apiKey">API Ключ</Label>
+            <Label htmlFor="apiKey">{t.apiDialog.apiKeyLabel}</Label>
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -122,31 +123,31 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
 
           {/* Model Selection */}
           <div className="space-y-2">
-            <Label htmlFor="model">Модель</Label>
+            <Label htmlFor="model">{t.apiDialog.modelLabel}</Label>
             <Select value={selectedModel} onValueChange={handleModelChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Выберите модель" />
+                <SelectValue placeholder={t.apiDialog.selectPlaceholder} />
               </SelectTrigger>
               <SelectContent>
                 {POPULAR_MODELS.map((model) => (
                   <SelectItem key={model.value} value={model.value}>
-                    {model.label}
+                    {t.apiDialog.models[model.labelKey]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            
+
             {selectedModel === 'custom' && (
               <Input
                 value={customModel}
                 onChange={(e) => handleCustomModelChange(e.target.value)}
-                placeholder="Введите название модели, например: anthropic/claude-3-opus"
+                placeholder={t.apiDialog.customModelPlaceholder}
                 className="mt-2"
               />
             )}
-            
+
             <p className="text-xs text-muted-foreground">
-              Полный список моделей доступен на сайте OpenRouter. Рекомендуем DeepSeek Chat для лучшего соотношения качества и цены.
+              {t.apiDialog.modelHelper}
             </p>
           </div>
 
@@ -154,30 +155,30 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
           <div className="space-y-2">
             <Label htmlFor="systemPrompt" className="flex items-center gap-2">
               <Brain className="h-4 w-4" />
-              Системный промпт
+              {t.apiDialog.systemPromptLabel}
             </Label>
             <Textarea
               id="systemPrompt"
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder={DEFAULT_SYSTEM_PROMPT}
+              placeholder={defaultPrompt}
               className="min-h-[100px]"
             />
             <p className="text-xs text-muted-foreground">
-              Настройте поведение AI-помощника. Этот промпт определяет, как AI будет отвечать на ваши запросы о привычках.
+              {t.apiDialog.systemPromptHelper}
             </p>
           </div>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
-            Отмена
+            {t.apiDialog.cancel}
           </Button>
           <Button
             type="button"
             onClick={handleSave}
             disabled={!apiKey.trim() || (selectedModel === 'custom' ? !customModel.trim() : !selectedModel)}
           >
-            Сохранить
+            {t.apiDialog.save}
           </Button>
         </DialogFooter>
       </DialogContent>

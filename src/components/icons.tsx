@@ -13,6 +13,8 @@ import {
   Voicemail, Wallet, Watch, Wifi, Wine, Wrench, Youtube, CircleDot, ClipboardList, Users, Leaf, Flame, BarChart, BriefcaseMedical, MountainSnow, School, TrendingDown
 } from 'lucide-react';
 
+export const ADDITIONAL_CATEGORY_KEY = 'Дополнительные';
+
 export const availableIcons: Record<string, IconOption> = {
   // Общее
   CheckCircle: { name: 'Выполнение', icon: CheckCircle, category: 'Общее' },
@@ -100,9 +102,9 @@ export const availableIcons: Record<string, IconOption> = {
   Wine: { name: 'Вино / Алкоголь (отслеживание)', icon: Wine, category: 'Ограничения / Негативные привычки' },
 
   // Дополнительные (эти иконки будут доступны для выбора в настройках категорий, но не в основном списке при добавлении привычки)
-  Anchor: { name: 'Якорь / Стабильность', icon: Anchor, category: 'Дополнительные' },
-  Award: { name: 'Награда', icon: Award, category: 'Дополнительные' },
-  Cloudy: { name: 'Облачно / Погода', icon: Cloudy, category: 'Дополнительные' },
+  Anchor: { name: 'Якорь / Стабильность', icon: Anchor, category: ADDITIONAL_CATEGORY_KEY },
+  Award: { name: 'Награда', icon: Award, category: ADDITIONAL_CATEGORY_KEY },
+  Cloudy: { name: 'Облачно / Погода', icon: Cloudy, category: ADDITIONAL_CATEGORY_KEY },
 };
 
 export const defaultIconKey = 'CheckCircle'; // "Выполнение"

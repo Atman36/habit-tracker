@@ -103,12 +103,12 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* font-family removed to allow Next/font (Geist) to take precedence */
+    font-family: 'Inter', 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
   }
 }
 
 /* Utility: hide default Next.js starter/Vercel badge if present */
-/* This targets the common starter link placed fixed в левом нижнем углу */
+/* This targets the common starter link that sits fixed in the bottom-left corner */
 a[href*="vercel.com"] {
   display: none !important;
 }

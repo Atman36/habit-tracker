@@ -16,12 +16,13 @@ import {
   isAfter,
   startOfDay, 
 } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { enUS, ru } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, CalendarRange } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 
 interface WeeklyProgressProps {
   habits: Habit[];
@@ -55,6 +56,9 @@ const getProgressTextColor = (percentage: number, activeHabits: number): string 
 
 
 export function WeeklyProgress({ habits }: WeeklyProgressProps) {
+  const t = useTranslations();
+  const { language } = useLanguage();
+  const dateLocale = language === 'ru' ? ru : enUS;
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const weekInterval = useMemo(() => {
@@ -71,7 +75,7 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
       
       const activeHabitsOnDay = habits.filter(habit => {
         const habitCreationDayStart = startOfDay(parseISO(habit.createdAt));
-        // Привычка активна, если 'day' не раньше дня создания привычки
+        // Habit is active if the current day is not before its creation date
         return !isBefore(day, habitCreationDayStart);
       });
       
@@ -123,25 +127,25 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
         <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-2">
             <CalendarRange className="h-6 w-6 text-primary" />
-            <CardTitle className="text-xl font-semibold">Прогресс за неделю</CardTitle>
+            <CardTitle className="text-xl font-semibold">{t.weeklyProgress.title}</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')} aria-label="Предыдущая неделя">
+            <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')} aria-label={t.weeklyProgress.previousWeekAria}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-medium w-32 text-center">
-              {format(weekInterval.start, 'd MMM', { locale: ru })} - {format(weekInterval.end, 'd MMM yyyy', { locale: ru })}
+              {format(weekInterval.start, 'd MMM', { locale: dateLocale })} - {format(weekInterval.end, 'd MMM yyyy', { locale: dateLocale })}
             </span>
-            <Button variant="outline" size="icon" onClick={() => navigateWeek('next')} disabled={!canGoToNextWeek} aria-label="Следующая неделя">
+            <Button variant="outline" size="icon" onClick={() => navigateWeek('next')} disabled={!canGoToNextWeek} aria-label={t.weeklyProgress.nextWeekAria}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <CardDescription>Отслеживайте выполнение привычек по дням недели.</CardDescription>
+        <CardDescription>{t.weeklyProgress.description}</CardDescription>
       </CardHeader>
       <CardContent>
         {habits.length === 0 ? (
-          <p className="text-muted-foreground">Нет привычек для отображения недельного прогресса.</p>
+          <p className="text-muted-foreground">{t.weeklyProgress.noHabits}</p>
         ) : (
           <>
             <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-6">
@@ -161,7 +165,7 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
                       "w-full h-6 rounded flex items-center justify-center mb-1",
                       getProgressColor(dayData.progressPercentage, dayData.activeHabitsCount)
                     )}
-                    title={`${dayData.progressPercentage}% выполнено`}
+                    title={`${dayData.progressPercentage}% ${t.weeklyProgress.progressTooltipSuffix}`}
                   >
                      <span className={cn("text-xs font-semibold", getProgressTextColor(dayData.progressPercentage, dayData.activeHabitsCount))}>
                         {dayData.activeHabitsCount > 0 ? `${dayData.progressPercentage}%` : '-'}
@@ -176,33 +180,33 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
 
             <div className="mb-4">
               <div className="flex justify-between text-sm mb-1">
-                <span className="font-medium">Общий прогресс за неделю:</span>
-                <span className="font-semibold">{weeklyStats.overallPercentage}% ({weeklyStats.totalCompleted} из {weeklyStats.totalPossible} возм.)</span>
+                <span className="font-medium">{t.weeklyProgress.overallLabel}</span>
+                <span className="font-semibold">{weeklyStats.overallPercentage}% ({t.weeklyProgress.overallDetails(weeklyStats.totalCompleted, weeklyStats.totalPossible)})</span>
               </div>
               <Progress value={weeklyStats.overallPercentage} className="h-3" />
             </div>
 
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span className="font-semibold">Легенда:</span>
+              <span className="font-semibold">{t.weeklyProgress.legendLabel}</span>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm bg-green-500/70"></div>
-                <span>{'>'}80%</span>
+                <span>{t.weeklyProgress.legendHigh}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm bg-yellow-500/70"></div>
-                <span>50-80%</span>
+                <span>{t.weeklyProgress.legendMedium}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm bg-red-500/70"></div>
-                <span>{'<'}50%</span>
+                <span>{t.weeklyProgress.legendLow}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm bg-muted/50"></div>
-                <span>0%</span>
+                <span>{t.weeklyProgress.legendZero}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm bg-muted/30"></div>
-                <span>Нет активных</span>
+                <span>{t.weeklyProgress.legendNoHabits}</span>
               </div>
             </div>
           </>
