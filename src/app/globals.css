@@ -103,7 +103,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* font-family removed to allow Next/font (Geist) to take precedence */
+    font-family: 'Inter', 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
   }
 }
 

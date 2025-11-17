@@ -20,8 +20,6 @@ import {
 } from "@/components/ui/accordion";
 import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 import { getLocalizedIconName } from '@/lib/iconLocalization';
-import { useTranslations, useLanguage } from '@/components/LanguageProvider';
-import { getLocalizedIconName } from '@/lib/iconLocalization';
 
 interface HabitItemProps {
   habit: Habit;
