@@ -62,9 +62,20 @@ node_modules/
 *.sln
 *.sw?
 # OS specific
-# Task files
+.DS_Store
+Thumbs.db
+
+# Task files and IDE configs
 tasks.json
-tasks/ 
+tasks/
 .cursor/
 .roo/
 .idx/
+.modified
+.roomodes
+.taskmasterconfig
+.windsurfrules
+
+# Local environment
+.env.local
+.env.*.local
