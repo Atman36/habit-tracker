@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Lightbulb, AlertTriangle, Settings2 } from 'lucide-react';
+import { useTranslations } from '@/components/LanguageProvider';
 
 interface PersonalizedTipsSectionProps {
   habits: Habit[];
@@ -16,6 +17,7 @@ interface PersonalizedTipsSectionProps {
 }
 
 export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSettingsDialog }: PersonalizedTipsSectionProps) {
+  const t = useTranslations();
   const [tips, setTips] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,7 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
     setTips([]);
 
     if (!openRouterSettings?.apiKey) {
-      setError("API ключ OpenRouter не настроен. Пожалуйста, добавьте его и выберите модель.");
+      setError(t.personalizedTips.missingApiKey);
       onOpenSettingsDialog();
       setIsLoading(false);
       return;
@@ -57,10 +59,10 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lightbulb className="h-6 w-6 text-yellow-500" />
-          Персональные советы
+          {t.personalizedTips.title}
         </CardTitle>
         <CardDescription>
-          Получите советы от AI-помощника, чтобы улучшить ваши привычки и достигать целей эффективнее.
+          {t.personalizedTips.description}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -69,21 +71,21 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Получение советов...
+                {t.personalizedTips.fetching}
               </>
             ) : (
-              'Получить советы'
+              t.personalizedTips.fetchButton
             )}
           </Button>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Настройки OpenRouter:</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{t.personalizedTips.settingsLabel}</span>
             {openRouterSettings?.apiKey ? (
-              <Button variant="ghost" size="icon" onClick={onOpenSettingsDialog} aria-label="Настройки OpenRouter">
+              <Button variant="ghost" size="icon" onClick={onOpenSettingsDialog} aria-label={t.personalizedTips.configure}>
                 <Settings2 className="h-5 w-5" />
               </Button>
             ) : (
               <Button variant="outline" size="sm" onClick={onOpenSettingsDialog}>
-                Настроить
+                {t.personalizedTips.configure}
               </Button>
             )}
           </div>
@@ -91,21 +93,21 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
 
         {habits.length === 0 && !isLoading && (
           <p className="mt-4 text-sm text-muted-foreground">
-            Добавьте хотя бы одну привычку, чтобы получить персональные советы.
+            {t.personalizedTips.noHabits}
           </p>
         )}
 
         {error && (
           <Alert variant="destructive" className="mt-4">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Ошибка</AlertTitle>
+            <AlertTitle>{t.personalizedTips.errorTitle}</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {tips.length > 0 && (
           <div className="mt-6 space-y-3">
-            <h3 className="text-lg font-semibold">Ваши персональные советы:</h3>
+            <h3 className="text-lg font-semibold">{t.personalizedTips.tipsTitle}</h3>
             <ul className="list-disc list-inside space-y-2 pl-2">
               {tips.map((tip, index) => (
                 <li key={index} className="text-sm leading-relaxed">{tip}</li>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, subDays, eachDayOfInterval, isSameDay, parseISO, startOfDay } from 'date-fns';
 import { TrendingUp, CheckCircle2, Repeat, Award, BarChartBig } from 'lucide-react';
 import React from 'react';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 
 interface StatsOverviewProps {
   habits: Habit[];
@@ -17,6 +18,8 @@ const getCompletionsOnDate = (completions: HabitCompletion[], date: Date, status
 };
 
 export function StatsOverview({ habits }: StatsOverviewProps) {
+  const t = useTranslations();
+  const { language } = useLanguage();
   const today = startOfDay(new Date());
   const last30DaysInterval = {
     start: subDays(today, 29), // 30 days including today
@@ -72,40 +75,45 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
   }, 0);
 
   const getMotivationalMessage = () => {
-    if (habits.length === 0) return "Добавьте привычки, чтобы увидеть статистику!";
-    if (averageCompletionPercentage > 75) return "Отличная работа! Вы на высоте! 💪";
-    if (averageCompletionPercentage > 50) return "Хороший прогресс! Продолжайте в том же духе. 🚀";
-    if (averageCompletionPercentage > 25) return "Неплохое начало! Маленькие шаги ведут к большим результатам. ✨";
-    return "Каждый день - новая возможность стать лучше! 🌱";
+    if (habits.length === 0) return t.stats.motivational.empty;
+    if (averageCompletionPercentage > 75) return t.stats.motivational.excellent;
+    if (averageCompletionPercentage > 50) return t.stats.motivational.good;
+    if (averageCompletionPercentage > 25) return t.stats.motivational.gettingThere;
+    return t.stats.motivational.keepGoing;
   };
+
+  const completionTodayValue = language === 'ru'
+    ? `${habitsCompletedToday} из ${habits.length}`
+    : `${habitsCompletedToday} of ${habits.length}`;
+  const streakUnit = language === 'ru' ? ' дн.' : ' days';
 
   const stats = [
     {
-      label: "Выполнено сегодня",
-      value: `${habitsCompletedToday} из ${habits.length}`,
+      label: t.stats.cards.completedToday,
+      value: completionTodayValue,
       icon: CheckCircle2,
       color: "text-green-500",
     },
     {
-      label: "% выполнения (30 дн.)",
+      label: t.stats.cards.completionRate,
       value: `${averageCompletionPercentage}%`,
       icon: TrendingUp,
       color: "text-blue-500",
     },
     {
-      label: "Средняя серия",
-      value: `${averageStreak} дн.`,
+      label: t.stats.cards.averageStreak,
+      value: `${averageStreak}${streakUnit}`,
       icon: Repeat,
       color: "text-orange-500",
     },
     {
-      label: "Лучшая серия",
-      value: `${bestStreak} дн.`,
+      label: t.stats.cards.bestStreak,
+      value: `${bestStreak}${streakUnit}`,
       icon: Award,
       color: "text-yellow-500",
     },
     {
-      label: "Выполнено за месяц",
+      label: t.stats.cards.completedThisMonth,
       value: totalCompletionsLast30Days,
       icon: BarChartBig,
       color: "text-purple-500",
@@ -114,9 +122,9 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
 
   return (
     <Card className="my-6 shadow-md">
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold">Обзор статистики</CardTitle>
-      </CardHeader>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">{t.stats.title}</CardTitle>
+        </CardHeader>
       <CardContent>
         {habits.length === 0 ? (
           <p className="text-muted-foreground">{getMotivationalMessage()}</p>

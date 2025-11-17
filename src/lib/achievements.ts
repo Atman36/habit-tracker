@@ -1,128 +1,154 @@
 import type { Habit, HabitCompletion, Achievement, AchievementType, UserAchievements } from './types';
 import { format, parseISO, isValid, differenceInDays, startOfDay, isToday, isWeekend, isSameDay, subDays } from 'date-fns';
 
-// Определение всех доступных достижений
+// Definition of every available achievement
 export const AVAILABLE_ACHIEVEMENTS: Omit<Achievement, 'id' | 'unlockedAt' | 'progress'>[] = [
   {
     type: 'first_week',
-    name: 'Первая неделя',
-    description: 'Выполните любую привычку 7 дней подряд',
+    name: 'First Week',
+    description: 'Complete any habit for 7 days in a row',
     badgeIcon: 'first_week.svg',
     rarity: 'common',
     maxProgress: 7,
-    category: 'Начинающий'
+    category: 'Getting Started'
   },
   {
     type: 'month_streak',
-    name: 'Месячный марафон',
-    description: 'Выполните любую привычку 30 дней подряд',
+    name: 'Monthly Marathon',
+    description: 'Complete any habit for 30 days in a row',
     badgeIcon: 'month_streak.svg',
     rarity: 'rare',
     maxProgress: 30,
-    category: 'Постоянство'
+    category: 'Consistency'
   },
   {
     type: 'all_habits_day',
-    name: 'Идеальный день',
-    description: 'Выполните все активные привычки в один день',
+    name: 'Perfect Day',
+    description: 'Complete every active habit in a single day',
     badgeIcon: 'perfect_day.svg',
     rarity: 'epic',
     maxProgress: 1,
-    category: 'Совершенство'
+    category: 'Perfection'
   },
   {
     type: 'habit_creator',
-    name: 'Архитектор привычек',
-    description: 'Создайте 10 различных привычек',
+    name: 'Habit Architect',
+    description: 'Create 10 distinct habits',
     badgeIcon: 'habit_creator.svg',
     rarity: 'common',
     maxProgress: 10,
-    category: 'Творчество'
+    category: 'Creativity'
   },
   {
     type: 'consistency_master',
-    name: 'Мастер постоянства',
-    description: 'Поддерживайте серию в 100 дней для любой привычки',
+    name: 'Consistency Master',
+    description: 'Maintain a 100-day streak on any habit',
     badgeIcon: 'consistency_master.svg',
     rarity: 'legendary',
     maxProgress: 100,
-    category: 'Постоянство'
+    category: 'Consistency'
   },
   {
     type: 'early_bird',
-    name: 'Ранняя пташка',
-    description: 'Выполните 50 привычек до 8:00 утра',
+    name: 'Early Bird',
+    description: 'Complete 50 habits before 8:00 AM',
     badgeIcon: 'early_bird.svg',
     rarity: 'rare',
     maxProgress: 50,
-    category: 'Режим дня'
+    category: 'Daily Rhythm'
   },
   {
     type: 'weekend_warrior',
-    name: 'Воин выходных',
-    description: 'Выполните все привычки в течение 4 выходных подряд',
+    name: 'Weekend Warrior',
+    description: 'Complete every habit across four consecutive weekends',
     badgeIcon: 'weekend_warrior.svg',
     rarity: 'rare',
     maxProgress: 4,
-    category: 'Режим дня'
+    category: 'Daily Rhythm'
   },
   {
     type: 'perfectionist',
-    name: 'Перфекционист',
-    description: 'Выполните 100 привычек без единого пропуска',
+    name: 'Perfectionist',
+    description: 'Complete 100 habits without a single miss',
     badgeIcon: 'perfectionist.svg',
     rarity: 'epic',
     maxProgress: 100,
-    category: 'Совершенство'
+    category: 'Perfection'
   },
   {
     type: 'comeback_kid',
-    name: 'Феникс',
-    description: 'Восстановите серию после неудачи 5 раз',
+    name: 'Comeback Kid',
+    description: 'Recover your streak after a setback five times',
     badgeIcon: 'comeback_kid.svg',
     rarity: 'rare',
     maxProgress: 5,
-    category: 'Стойкость'
+    category: 'Resilience'
   },
   {
     type: 'milestone',
-    name: 'Годовой марафон',
-    description: 'Выполните любую привычку 365 дней подряд',
+    name: 'Year-Long Marathon',
+    description: 'Complete any habit for 365 days in a row',
     badgeIcon: 'milestone_365.svg',
     rarity: 'legendary',
     maxProgress: 365,
-    category: 'Вехи'
+    category: 'Milestones'
   },
   {
     type: 'category_master',
-    name: 'Мастер категории',
-    description: 'Выполните все привычки в одной категории 30 дней подряд',
+    name: 'Category Master',
+    description: 'Complete every habit in one category for 30 days straight',
     badgeIcon: 'category_master.svg',
     rarity: 'epic',
     maxProgress: 30,
-    category: 'Мастерство'
+    category: 'Mastery'
   },
   {
     type: 'habit_diversity',
-    name: 'Разносторонний',
-    description: 'Создайте привычки в 5 различных категориях',
+    name: 'Versatile',
+    description: 'Create habits across five different categories',
     badgeIcon: 'habit_diversity.svg',
     rarity: 'rare',
     maxProgress: 5,
-    category: 'Разнообразие'
+    category: 'Variety'
   },
   {
     type: 'long_term_commitment',
-    name: 'Долгосрочная приверженность',
-    description: 'Поддерживайте активность в приложении 6 месяцев',
+    name: 'Long-Term Commitment',
+    description: 'Stay active inside the app for six months',
     badgeIcon: 'long_term.svg',
     rarity: 'epic',
     maxProgress: 180,
-    category: 'Приверженность'
+    category: 'Commitment'
   }
 ];
 
-// Очки за редкость достижений
+const ACHIEVEMENT_TEMPLATE_MAP = AVAILABLE_ACHIEVEMENTS.reduce(
+  (acc, template) => {
+    acc[template.type] = template;
+    return acc;
+  },
+  {} as Partial<Record<AchievementType, Omit<Achievement, 'id' | 'unlockedAt' | 'progress'>>>
+);
+
+function createUnlockedAchievement(
+  type: AchievementType,
+  overrides: Partial<Achievement> = {}
+): Achievement {
+  const template = ACHIEVEMENT_TEMPLATE_MAP[type];
+  if (!template) {
+    throw new Error(`Unknown achievement template: ${type}`);
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    ...template,
+    unlockedAt: new Date().toISOString(),
+    progress: template.maxProgress,
+    ...overrides,
+  };
+}
+
+// Points awarded based on achievement rarity
 const RARITY_POINTS = {
   common: 10,
   rare: 25,
@@ -130,9 +156,9 @@ const RARITY_POINTS = {
   legendary: 100
 };
 
-// Функция для вычисления уровня пользователя
+// Level calculation based on the user's total points
 export function calculateUserLevel(totalPoints: number): number {
-  // Каждый уровень требует больше очков (прогрессивная система)
+  // Each level requires more points than the previous one
   if (totalPoints < 50) return 1;
   if (totalPoints < 150) return 2;
   if (totalPoints < 300) return 3;
@@ -142,124 +168,81 @@ export function calculateUserLevel(totalPoints: number): number {
   if (totalPoints < 1500) return 7;
   if (totalPoints < 2000) return 8;
   if (totalPoints < 2600) return 9;
-  return Math.floor(totalPoints / 300) + 1; // Для очень высоких уровней
+  return Math.floor(totalPoints / 300) + 1; // Safety net for very high levels
 }
 
-// Функция для проверки достижения "Первая неделя"
+// Check if the "First Week" achievement should be unlocked
 function checkFirstWeekAchievement(habits: Habit[]): Achievement | null {
+  const template = ACHIEVEMENT_TEMPLATE_MAP['first_week'];
+  if (!template) return null;
+
   for (const habit of habits) {
-    if (habit.streak >= 7) {
-      return {
-        id: crypto.randomUUID(),
-        type: 'first_week',
-        name: 'Первая неделя',
-        description: 'Выполните любую привычку 7 дней подряд',
-        badgeIcon: 'first_week.svg',
-        rarity: 'common',
-        unlockedAt: new Date().toISOString(),
-        progress: 7,
-        maxProgress: 7,
-        category: 'Начинающий'
-      };
+    if (habit.streak >= template.maxProgress) {
+      return createUnlockedAchievement('first_week');
     }
   }
   return null;
 }
 
-// Функция для проверки достижения "Месячный марафон"
+// Check if the "Monthly Marathon" achievement should be unlocked
 function checkMonthStreakAchievement(habits: Habit[]): Achievement | null {
+  const template = ACHIEVEMENT_TEMPLATE_MAP['month_streak'];
+  if (!template) return null;
+
   for (const habit of habits) {
-    if (habit.streak >= 30) {
-      return {
-        id: crypto.randomUUID(),
-        type: 'month_streak',
-        name: 'Месячный марафон',
-        description: 'Выполните любую привычку 30 дней подряд',
-        badgeIcon: 'month_streak.svg',
-        rarity: 'rare',
-        unlockedAt: new Date().toISOString(),
-        progress: 30,
-        maxProgress: 30,
-        category: 'Постоянство'
-      };
+    if (habit.streak >= template.maxProgress) {
+      return createUnlockedAchievement('month_streak');
     }
   }
   return null;
 }
 
-// Функция для проверки достижения "Идеальный день"
+// Check if the "Perfect Day" achievement should be unlocked
 function checkPerfectDayAchievement(habits: Habit[]): Achievement | null {
   if (habits.length === 0) return null;
-  
+
   const today = format(new Date(), 'yyyy-MM-dd');
   const dailyHabits = habits.filter(h => h.frequency === 'daily');
-  
+
   if (dailyHabits.length === 0) return null;
-  
+
   const allCompleted = dailyHabits.every(habit => {
     const todayCompletion = habit.completions.find(c => c.date === today);
     return todayCompletion && todayCompletion.status === 'completed';
   });
-  
+
   if (allCompleted) {
-    return {
-      id: crypto.randomUUID(),
-      type: 'all_habits_day',
-      name: 'Идеальный день',
-      description: 'Выполните все активные привычки в один день',
-      badgeIcon: 'perfect_day.svg',
-      rarity: 'epic',
-      unlockedAt: new Date().toISOString(),
-      progress: 1,
-      maxProgress: 1,
-      category: 'Совершенство'
-    };
+    return createUnlockedAchievement('all_habits_day');
   }
-  
+
   return null;
 }
 
-// Функция для проверки достижения "Архитектор привычек"
+// Check if the "Habit Architect" achievement should be unlocked
 function checkHabitCreatorAchievement(habits: Habit[]): Achievement | null {
+  const template = ACHIEVEMENT_TEMPLATE_MAP['habit_creator'];
+  if (!template) return null;
+
   if (habits.length >= 10) {
-    return {
-      id: crypto.randomUUID(),
-      type: 'habit_creator',
-      name: 'Архитектор привычек',
-      description: 'Создайте 10 различных привычек',
-      badgeIcon: 'habit_creator.svg',
-      rarity: 'common',
-      unlockedAt: new Date().toISOString(),
-      progress: habits.length,
-      maxProgress: 10,
-      category: 'Творчество'
-    };
+    return createUnlockedAchievement('habit_creator', { progress: habits.length });
   }
   return null;
 }
 
-// Функция для проверки достижения "Мастер постоянства"
+// Check if the "Consistency Master" achievement should be unlocked
 function checkConsistencyMasterAchievement(habits: Habit[]): Achievement | null {
+  const template = ACHIEVEMENT_TEMPLATE_MAP['consistency_master'];
+  if (!template) return null;
+
   for (const habit of habits) {
-    if (habit.streak >= 100) {
-      return {
-        id: crypto.randomUUID(),
-        type: 'consistency_master',
-        name: 'Мастер постоянства',
-        description: 'Поддерживайте серию в 100 дней для любой привычки',
-        badgeIcon: 'consistency_master.svg',
-        rarity: 'legendary',
-        unlockedAt: new Date().toISOString(),
-        progress: 100,
-        maxProgress: 100,
-        category: 'Постоянство'
-      };
+    if (habit.streak >= template.maxProgress) {
+      return createUnlockedAchievement('consistency_master');
     }
   }
   return null;
 }
 
-// Функция для проверки достижения "Воин выходных"
+// Check if the "Weekend Warrior" achievement should be unlocked
 function checkWeekendWarriorAchievement(habits: Habit[]): Achievement | null {
   const dailyHabits = habits.filter(h => h.frequency === 'daily');
   if (dailyHabits.length === 0) return null;
@@ -267,7 +250,7 @@ function checkWeekendWarriorAchievement(habits: Habit[]): Achievement | null {
   let consecutiveWeekends = 0;
   let currentDate = startOfDay(new Date());
   
-  // Проверяем последние 8 недель
+  // Check the last eight weeks
   for (let week = 0; week < 8; week++) {
     const saturday = subDays(currentDate, currentDate.getDay() - 6);
     const sunday = subDays(currentDate, currentDate.getDay());
@@ -288,18 +271,7 @@ function checkWeekendWarriorAchievement(habits: Habit[]): Achievement | null {
     if (allCompletedSaturday && allCompletedSunday) {
       consecutiveWeekends++;
       if (consecutiveWeekends >= 4) {
-        return {
-          id: crypto.randomUUID(),
-          type: 'weekend_warrior',
-          name: 'Воин выходных',
-          description: 'Выполните все привычки в течение 4 выходных подряд',
-          badgeIcon: 'weekend_warrior.svg',
-          rarity: 'rare',
-          unlockedAt: new Date().toISOString(),
-          progress: 4,
-          maxProgress: 4,
-          category: 'Режим дня'
-        };
+        return createUnlockedAchievement('weekend_warrior');
       }
     } else {
       consecutiveWeekends = 0;
@@ -311,33 +283,25 @@ function checkWeekendWarriorAchievement(habits: Habit[]): Achievement | null {
   return null;
 }
 
-// Функция для проверки достижения "Годовой марафон"
+// Check if the "Year-Long Marathon" achievement should be unlocked
 function checkMilestoneAchievement(habits: Habit[]): Achievement | null {
+  const template = ACHIEVEMENT_TEMPLATE_MAP['milestone'];
+  if (!template) return null;
+
   for (const habit of habits) {
-    if (habit.streak >= 365) {
-      return {
-        id: crypto.randomUUID(),
-        type: 'milestone',
-        name: 'Годовой марафон',
-        description: 'Выполните любую привычку 365 дней подряд',
-        badgeIcon: 'milestone_365.svg',
-        rarity: 'legendary',
-        unlockedAt: new Date().toISOString(),
-        progress: 365,
-        maxProgress: 365,
-        category: 'Вехи'
-      };
+    if (habit.streak >= template.maxProgress) {
+      return createUnlockedAchievement('milestone');
     }
   }
   return null;
 }
 
-// Основная функция для проверки всех достижений
+// Aggregate function that validates each achievement
 export function checkAchievements(habits: Habit[], currentAchievements: Achievement[]): Achievement[] {
   const newAchievements: Achievement[] = [];
   const unlockedTypes = new Set(currentAchievements.map(a => a.type));
   
-  // Проверяем каждое достижение только если оно еще не получено
+  // Only evaluate achievements that are not yet unlocked
   const achievementCheckers = [
     { type: 'first_week', checker: checkFirstWeekAchievement },
     { type: 'month_streak', checker: checkMonthStreakAchievement },
@@ -360,7 +324,7 @@ export function checkAchievements(habits: Habit[], currentAchievements: Achievem
   return newAchievements;
 }
 
-// Функция для вычисления прогресса достижений
+// Compute progress for achievements that are still locked
 export function calculateAchievementProgress(habits: Habit[], achievementType: AchievementType): number {
   switch (achievementType) {
     case 'first_week':
@@ -395,7 +359,7 @@ export function calculateAchievementProgress(habits: Habit[], achievementType: A
   }
 }
 
-// Функция для обновления пользовательских достижений
+// Update the user's achievements with any new unlocks
 export function updateUserAchievements(
   habits: Habit[], 
   currentUserAchievements: UserAchievements
@@ -416,7 +380,7 @@ export function updateUserAchievements(
   };
 }
 
-// Функция для получения всех достижений с прогрессом
+// Return every achievement, including progress for locked ones
 export function getAllAchievementsWithProgress(habits: Habit[], userAchievements: UserAchievements): Achievement[] {
   const unlockedTypes = new Set(userAchievements.unlockedAchievements.map(a => a.type));
   
@@ -428,7 +392,7 @@ export function getAllAchievementsWithProgress(habits: Habit[], userAchievements
       return unlockedAchievement;
     }
     
-    // Для незаблокированных достижений показываем прогресс
+    // Show live progress for achievements that are still locked
     const progress = calculateAchievementProgress(habits, template.type);
     
     return {

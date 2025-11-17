@@ -15,11 +15,11 @@ export async function fetchPersonalizedHabitTipsAction(
   settings?: OpenRouterActionSettings,
 ): Promise<PersonalizedHabitTipsOutput | ApiError> {
   if (!habits || habits.length === 0) {
-    return { tips: ['Добавьте привычки, чтобы получить персональные советы.'] };
+    return { tips: ['Add habits to receive personalized tips.'] };
   }
 
   if (!settings?.apiKey) {
-    return { error: "API ключ OpenRouter не настроен.", code: 'API_KEY_MISSING' };
+    return { error: 'OpenRouter API key is missing.', code: 'API_KEY_MISSING' };
   }
   if (!settings?.modelName) {
     // Although modelName is optional in the flow with a default,
@@ -62,6 +62,6 @@ export async function fetchPersonalizedHabitTipsAction(
          return { error: error.message, code: 'API_KEY_MISSING' };
       }
     }
-    return { error: 'Не удалось получить персональные советы. Попробуйте позже.' };
+    return { error: 'Unable to fetch personalized tips right now. Please try again later.' };
   }
 }

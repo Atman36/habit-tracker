@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from '@/lib/utils';
 import { getIconComponent, availableIcons as allAvailableIcons, defaultIconKey } from '@/components/icons';
 import { format, parseISO } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { enUS, ru } from 'date-fns/locale';
 import { Flame, Trash2, TrendingUp, CalendarDays, Check, X, ThumbsDown, ThumbsUp, Edit, ShieldCheck, ShieldAlert, SkipForward, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -18,6 +18,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import { getLocalizedIconName } from '@/lib/iconLocalization';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import { getLocalizedIconName } from '@/lib/iconLocalization';
 
 interface HabitItemProps {
   habit: Habit;
@@ -42,6 +46,8 @@ export function HabitItem({
   isCompactHabitView,
   isMinimalHabitView
 }: HabitItemProps) {
+  const t = useTranslations();
+  const { language } = useLanguage();
   const {
     attributes,
     listeners,
@@ -66,6 +72,7 @@ export function HabitItem({
   const isSkippedOnSelectedDate = completionForSelectedDate?.status === 'skipped';
 
   const IconComponent = getIconComponent(habit.icon);
+  const dateLocale = language === 'ru' ? ru : enUS;
 
   const handleAction = (status: HabitStatus) => {
     onToggleComplete(habit.id, selectedDate, status);
@@ -118,23 +125,23 @@ export function HabitItem({
         {/* Checkbox for completion */}
         <div className="flex items-center gap-1">
           {habit.type === 'positive' ? (
-            <input
-              type="checkbox"
-              checked={isCompletedOnSelectedDate}
-              onChange={() => handleAction(isCompletedOnSelectedDate ? 'failed' : 'completed')}
-              className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
-              aria-label={isCompletedOnSelectedDate ? 'Отмечено как выполнено' : 'Отметить как выполнено'}
-            />
-          ) : (
-            <input
-              type="checkbox"
-              checked={isCompletedOnSelectedDate}
-              onChange={() => handleAction(isCompletedOnSelectedDate ? 'failed' : 'completed')}
-              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-              aria-label={isCompletedOnSelectedDate ? 'Отмечено как удержался' : 'Отметить как удержался'}
-            />
-          )}
-        </div>
+              <input
+                type="checkbox"
+                checked={isCompletedOnSelectedDate}
+                onChange={() => handleAction(isCompletedOnSelectedDate ? 'failed' : 'completed')}
+                className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+              aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedComplete : t.habitItem.aria.markComplete}
+              />
+            ) : (
+              <input
+                type="checkbox"
+                checked={isCompletedOnSelectedDate}
+                onChange={() => handleAction(isCompletedOnSelectedDate ? 'failed' : 'completed')}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedResisted : t.habitItem.aria.markResisted}
+              />
+            )}
+          </div>
       </div>
     );
   }
@@ -159,7 +166,7 @@ export function HabitItem({
                     'cursor-pointer transition-colors',
                     isCompletedOnSelectedDate ? 'text-green-600' : 'text-gray-400 hover:text-green-500'
                   )}
-                  aria-label={isCompletedOnSelectedDate ? 'Отмечено как выполнено' : 'Отметить как выполнено'}
+                  aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedComplete : t.habitItem.aria.markComplete}
                 />
                 <ThumbsDown
                   onClick={() => handleAction('failed')}
@@ -168,7 +175,7 @@ export function HabitItem({
                     'cursor-pointer transition-colors',
                     isFailedOnSelectedDate ? 'text-red-600' : 'text-gray-400 hover:text-red-500'
                   )}
-                  aria-label={isFailedOnSelectedDate ? 'Отмечено как не выполнено' : 'Отметить как не выполнено'}
+                  aria-label={isFailedOnSelectedDate ? t.habitItem.aria.markedFailed : t.habitItem.aria.markFailed}
                 />
               </>
             ) : ( // Negative habit in compact view
@@ -180,7 +187,7 @@ export function HabitItem({
                     'cursor-pointer transition-colors',
                     isCompletedOnSelectedDate ? 'text-blue-600' : 'text-gray-400 hover:text-blue-500'
                   )}
-                  aria-label={isCompletedOnSelectedDate ? 'Отмечено как удержался' : 'Отметить как удержался'}
+                  aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedResisted : t.habitItem.aria.markResisted}
                 />
                 <ThumbsDown
                   onClick={() => handleAction('failed')}
@@ -189,7 +196,7 @@ export function HabitItem({
                     'cursor-pointer transition-colors',
                     isFailedOnSelectedDate ? 'text-red-600' : 'text-gray-400 hover:text-red-500'
                   )}
-                  aria-label={isFailedOnSelectedDate ? 'Отмечено как сорвался' : 'Отметить как сорвался'}
+                  aria-label={isFailedOnSelectedDate ? t.habitItem.aria.markedRelapse : t.habitItem.aria.markRelapse}
                 />
               </>
             )}
@@ -223,10 +230,10 @@ export function HabitItem({
               "col-span-4 transition-all duration-200 ease-in-out transform active:scale-95 w-full",
               isCompletedOnSelectedDate ? 'bg-accent hover:bg-accent/90 text-accent-foreground' : ''
             )}
-            aria-label={isCompletedOnSelectedDate ? 'Отмечено как выполнено' : 'Отметить как выполнено'}
+            aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedComplete : t.habitItem.aria.markComplete}
           >
             <ThumbsUp className={normalIconClassWithMargin} />
-            {isCompletedOnSelectedDate ? 'Выполнено!' : 'Выполнил'}
+            {isCompletedOnSelectedDate ? t.habitItem.positiveCompleted : t.habitItem.positiveComplete}
           </Button>
           <Button
             onClick={() => handleAction('failed')}
@@ -235,7 +242,7 @@ export function HabitItem({
               "col-span-1 transition-all duration-200 ease-in-out transform active:scale-95 w-full flex items-center justify-center",
                isFailedOnSelectedDate ? '' : 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive'
             )}
-            aria-label={isFailedOnSelectedDate ? 'Отмечено как не выполнено' : 'Отметить как не выполнено'}
+            aria-label={isFailedOnSelectedDate ? t.habitItem.aria.markedFailed : t.habitItem.aria.markFailed}
           >
             <ThumbsDown className="h-4 w-4" />
           </Button>
@@ -245,37 +252,37 @@ export function HabitItem({
       return (
         <div className="grid grid-cols-5 gap-2 mt-3">
            <Button
-            onClick={() => handleAction('completed')} 
+            onClick={() => handleAction('completed')}
             variant={isCompletedOnSelectedDate ? 'default' : 'outline'}
             className={cn(
-              "col-span-2 transition-all duration-200 ease-in-out transform active:scale-95 w-full", 
+              "col-span-2 transition-all duration-200 ease-in-out transform active:scale-95 w-full",
               isCompletedOnSelectedDate ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-blue-500/50 text-blue-600 hover:bg-blue-500/10'
             )}
-            aria-label={isCompletedOnSelectedDate ? 'Отмечено как удержался' : 'Отметить как удержался'}
+            aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedResisted : t.habitItem.aria.markResisted}
           >
              <ShieldCheck className={normalIconClassWithMargin} />
-            {isCompletedOnSelectedDate ? 'Удержался!' : 'Удержался'}
+            {isCompletedOnSelectedDate ? t.habitItem.negativeCompleted : t.habitItem.negativeComplete}
           </Button>
           <Button
             onClick={() => handleAction('failed')}
             variant={isFailedOnSelectedDate ? 'destructive' : 'outline'}
             className={cn(
-              "col-span-2 transition-all duration-200 ease-in-out transform active:scale-95 w-full", 
+              "col-span-2 transition-all duration-200 ease-in-out transform active:scale-95 w-full",
                isFailedOnSelectedDate ? '' : 'text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive'
             )}
-            aria-label={isFailedOnSelectedDate ? 'Отмечено как сорвался' : 'Отметить как сорвался'}
+            aria-label={isFailedOnSelectedDate ? t.habitItem.aria.markedRelapse : t.habitItem.aria.markRelapse}
           >
             <ShieldAlert className={normalIconClassWithMargin} />
-            {isFailedOnSelectedDate ? 'Сорвался!' : 'Сорвался'}
+            {isFailedOnSelectedDate ? t.habitItem.negativeFailedCompleted : t.habitItem.negativeFailed}
           </Button>
           <Button
             onClick={() => handleAction('skipped')}
             variant={isSkippedOnSelectedDate ? 'secondary' : 'outline'}
             className={cn(
-              "col-span-1 transition-all duration-200 ease-in-out transform active:scale-95 w-full flex items-center justify-center", 
+              "col-span-1 transition-all duration-200 ease-in-out transform active:scale-95 w-full flex items-center justify-center",
               isSkippedOnSelectedDate ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'text-gray-600 border-gray-500/50 hover:bg-gray-500/10'
             )}
-            aria-label={isSkippedOnSelectedDate ? 'Отмечено как пропущено' : 'Отметить как пропущено'}
+            aria-label={isSkippedOnSelectedDate ? t.habitItem.negativeSkipAria.checked : t.habitItem.negativeSkipAria.unchecked}
           >
             <SkipForward className={normalIconClassWithMargin} />
           </Button>
@@ -285,7 +292,7 @@ export function HabitItem({
   };
   
   const uniqueSelectedValue = determineInitialIconValueForItem(habit, userCategories); 
-  let habitCategoryDisplayName = allAvailableIcons[habit.icon]?.name || 'Категория'; 
+  let habitCategoryDisplayName = habit.icon ? getLocalizedIconName(habit.icon, language) : t.addHabit.form.categoryLabel;
 
   if (uniqueSelectedValue.startsWith('user:')) {
     const userId = uniqueSelectedValue.substring('user:'.length);
@@ -361,7 +368,7 @@ export function HabitItem({
             <AccordionItem value="progress" className="border-b-0">
               <AccordionTrigger className="text-sm py-2 hover:no-underline">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4"/> Показать прогресс
+                  <TrendingUp className="h-4 w-4"/> {t.habitItem.showProgress}
                 </div>
               </AccordionTrigger>
               <AccordionContent>
@@ -371,7 +378,7 @@ export function HabitItem({
             <AccordionItem value="history" className="border-b-0">
               <AccordionTrigger className="text-sm py-2 hover:no-underline">
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4"/> История отметок
+                  <CalendarDays className="h-4 w-4"/> {t.habitItem.showHistory}
                 </div>
               </AccordionTrigger>
               <AccordionContent>
@@ -381,7 +388,7 @@ export function HabitItem({
                       .sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()) 
                       .map(comp => (
                       <li key={comp.date} className="text-xs flex items-center">
-                        {format(parseISO(comp.date), 'PPP', { locale: ru })}:
+                        {format(parseISO(comp.date), 'PPP', { locale: dateLocale })}:
                         {comp.status === 'completed' && (
                           <Check className={cn(
                               "h-3 w-3 ml-1.5",
@@ -396,7 +403,7 @@ export function HabitItem({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Пока нет отметок.</p>
+                  <p className="text-xs text-muted-foreground">{t.habitItem.noHistory}</p>
                 )}
               </AccordionContent>
             </AccordionItem>
