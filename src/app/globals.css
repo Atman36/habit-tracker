@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 17% 95%; /* Light Gray #ECEFF1 */
+    --foreground: 210 10% 23%; /* Dark Slate Gray for text */
+
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 210 10% 23%; /* Dark Slate Gray */
+
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 210 10% 23%; /* Dark Slate Gray */
+
+    --primary: 207 90% 67%; /* Soft Blue #64B5F6 */
+    --primary-foreground: 207 90% 15%; /* Dark Blue for contrast on Soft Blue */
+
+    --secondary: 210 17% 88%; /* Lighter Gray for secondary elements */
+    --secondary-foreground: 210 10% 23%; /* Dark Slate Gray */
+
+    --muted: 210 17% 85%; /* Muted Gray */
+    --muted-foreground: 210 10% 45%; /* Muted Text Gray */
+
+    --accent: 125 44% 75%; /* Light Green #A5D6A7 */
+    --accent-foreground: 125 44% 20%; /* Dark Green for contrast on Light Green */
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 17% 88%; /* Border color, same as secondary bg */
+    --input: 0 0% 100%; /* White for input background */
+    --ring: 207 90% 67%; /* Primary color for focus rings */
+
+    --chart-1: 207 90% 67%; /* Primary Blue */
+    --chart-2: 125 44% 75%; /* Accent Green */
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+
+    /* Sidebar variables - kept as default or can be themed similarly if sidebar is used */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 207 90% 67%; /* Soft Blue, kept for dark mode for consistency, ensure contrast */
+    --primary-foreground: 207 90% 15%; /* Dark Blue for contrast */
+    
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    --accent: 125 44% 75%; /* Light Green, kept for dark mode for consistency, ensure contrast */
+    --accent-foreground: 125 44% 20%; /* Dark Green for contrast */
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 207 90% 67%; /* Primary color for rings */
+
+    --chart-1: 207 90% 67%;
+    --chart-2: 125 44% 75%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    /* Sidebar variables for dark mode */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* font-family removed to allow Next/font (Geist) to take precedence */
+  }
+}
+
+/* Utility: hide default Next.js starter/Vercel badge if present */
+/* This targets the common starter link placed fixed в левом нижнем углу */
+a[href*="vercel.com"] {
+  display: none !important;
+}
