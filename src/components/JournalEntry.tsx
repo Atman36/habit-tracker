@@ -3,7 +3,8 @@
 // Daily Journal with mood tracking and auto-save
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { DayJournalEntry, JournalBlock, JournalBlockType, MoodLevel } from '@/lib/types';
-import { useTranslations } from '@/components/LanguageProvider';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import { translations } from '@/lib/translations';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,10 +75,14 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: JournalEntryProps) {
-  const t = useTranslations();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [isOpen, setIsOpen] = useState(true);
   const [showSaved, setShowSaved] = useState(false);
   const savedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fallback to English if journal translations missing
+  const journalT = t.journal || translations.en.journal;
 
   // Find or create entry for selected date
   const existingEntry = journalEntries.find(entry => entry.date === selectedDate);
@@ -188,11 +193,11 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
   const getBlockTitle = (type: JournalBlockType): string => {
     switch (type) {
       case 'morning':
-        return t.journal.blocks.morning;
+        return journalT.blocks.morning;
       case 'evening':
-        return t.journal.blocks.evening;
+        return journalT.blocks.evening;
       case 'free_text':
-        return t.journal.blocks.freeText;
+        return journalT.blocks.freeText;
       default:
         return '';
     }
@@ -201,11 +206,11 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
   const getBlockPlaceholder = (type: JournalBlockType): string => {
     switch (type) {
       case 'morning':
-        return t.journal.blockPlaceholders.morning;
+        return journalT.blockPlaceholders.morning;
       case 'evening':
-        return t.journal.blockPlaceholders.evening;
+        return journalT.blockPlaceholders.evening;
       case 'free_text':
-        return t.journal.blockPlaceholders.freeText;
+        return journalT.blockPlaceholders.freeText;
       default:
         return '';
     }
@@ -222,7 +227,7 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">{t.journal.title}</CardTitle>
+                <CardTitle className="text-lg">{journalT.title}</CardTitle>
                 {hasMood && (
                   <span className="text-lg ml-2">{MOOD_EMOJIS[localEntry.mood!]}</span>
                 )}
@@ -231,7 +236,7 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
                 {showSaved && (
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                     <Check className="h-3 w-3" />
-                    {t.journal.autoSaved}
+                    {journalT.autoSaved}
                   </span>
                 )}
                 <ChevronDown
@@ -242,7 +247,7 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
                 />
               </div>
             </div>
-            <CardDescription>{t.journal.description}</CardDescription>
+            <CardDescription>{journalT.description}</CardDescription>
           </CardHeader>
         </CollapsibleTrigger>
 
@@ -250,7 +255,7 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
           <CardContent className="space-y-4">
             {/* Mood selector */}
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">{t.journal.mood.label}:</span>
+              <span className="text-sm font-medium">{journalT.mood.label}:</span>
               <div className="flex gap-1">
                 {([1, 2, 3, 4, 5] as MoodLevel[]).map((level) => (
                   <button
@@ -262,7 +267,7 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
                         ? "bg-primary/20 ring-2 ring-primary"
                         : "opacity-50 hover:opacity-100"
                     )}
-                    title={t.journal.mood.levels[level]}
+                    title={journalT.mood.levels[level]}
                   >
                     {MOOD_EMOJIS[level]}
                   </button>
@@ -275,10 +280,10 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
               <div className="text-center py-8 border-2 border-dashed border-border rounded-lg">
                 <FileText className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                 <p className="text-sm font-medium text-muted-foreground mb-1">
-                  {t.journal.noEntryTitle}
+                  {journalT.noEntryTitle}
                 </p>
                 <p className="text-xs text-muted-foreground mb-4">
-                  {t.journal.noEntryDescription}
+                  {journalT.noEntryDescription}
                 </p>
               </div>
             ) : (
@@ -318,21 +323,21 @@ export function JournalEntry({ selectedDate, journalEntries, onSaveEntry }: Jour
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="w-full">
                   <Plus className="h-4 w-4 mr-2" />
-                  {t.journal.addBlock}
+                  {journalT.addBlock}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-48">
                 <DropdownMenuItem onClick={() => addBlock('morning')}>
                   <Sun className="h-4 w-4 mr-2" />
-                  {t.journal.blocks.morning}
+                  {journalT.blocks.morning}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => addBlock('evening')}>
                   <Moon className="h-4 w-4 mr-2" />
-                  {t.journal.blocks.evening}
+                  {journalT.blocks.evening}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => addBlock('free_text')}>
                   <FileText className="h-4 w-4 mr-2" />
-                  {t.journal.blocks.freeText}
+                  {journalT.blocks.freeText}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
