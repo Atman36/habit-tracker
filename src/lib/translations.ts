@@ -227,6 +227,37 @@ interface AchievementsTranslations {
   };
 }
 
+interface JournalTranslations {
+  title: string;
+  description: string;
+  noEntryTitle: string;
+  noEntryDescription: string;
+  addBlock: string;
+  blocks: {
+    morning: string;
+    evening: string;
+    freeText: string;
+  };
+  blockPlaceholders: {
+    morning: string;
+    evening: string;
+    freeText: string;
+  };
+  mood: {
+    label: string;
+    levels: {
+      1: string;
+      2: string;
+      3: string;
+      4: string;
+      5: string;
+    };
+  };
+  autoSaved: string;
+  deleteBlock: string;
+  deleteBlockConfirm: string;
+}
+
 export interface TranslationContent {
   metadata: {
     title: string;
@@ -275,6 +306,7 @@ export interface TranslationContent {
   apiDialog: ApiDialogTranslations;
   progressChart: ProgressChartTranslations;
   achievements: AchievementsTranslations;
+  journal: JournalTranslations;
 }
 
 export const translations: Record<Language, TranslationContent> = {
@@ -531,6 +563,36 @@ export const translations: Record<Language, TranslationContent> = {
         epic: 'Epic',
         legendary: 'Legendary',
       },
+    },
+    journal: {
+      title: 'Daily Journal',
+      description: 'Reflect on your day and track your mood.',
+      noEntryTitle: 'No journal entry yet',
+      noEntryDescription: 'Start writing to capture your thoughts for today.',
+      addBlock: 'Add block',
+      blocks: {
+        morning: 'Morning reflection',
+        evening: 'Evening reflection',
+        freeText: 'Free notes',
+      },
+      blockPlaceholders: {
+        morning: 'How do you feel this morning? What are your intentions for today?',
+        evening: 'How was your day? What went well? What could be better?',
+        freeText: 'Write your thoughts here...',
+      },
+      mood: {
+        label: 'Today\'s mood',
+        levels: {
+          1: 'Very bad',
+          2: 'Bad',
+          3: 'Okay',
+          4: 'Good',
+          5: 'Excellent',
+        },
+      },
+      autoSaved: 'Auto-saved',
+      deleteBlock: 'Delete block',
+      deleteBlockConfirm: 'Are you sure you want to delete this block?',
     },
   },
   ru: {
@@ -798,6 +860,36 @@ export const translations: Record<Language, TranslationContent> = {
         epic: 'Эпическое',
         legendary: 'Легендарное',
       },
+    },
+    journal: {
+      title: 'Дневник',
+      description: 'Рефлексия дня и отслеживание настроения.',
+      noEntryTitle: 'Записей пока нет',
+      noEntryDescription: 'Начните писать, чтобы сохранить мысли о сегодняшнем дне.',
+      addBlock: 'Добавить блок',
+      blocks: {
+        morning: 'Утренняя рефлексия',
+        evening: 'Вечерняя рефлексия',
+        freeText: 'Свободные заметки',
+      },
+      blockPlaceholders: {
+        morning: 'Как вы себя чувствуете утром? Какие планы на день?',
+        evening: 'Как прошёл день? Что получилось хорошо? Что можно улучшить?',
+        freeText: 'Напишите свои мысли здесь...',
+      },
+      mood: {
+        label: 'Настроение сегодня',
+        levels: {
+          1: 'Очень плохо',
+          2: 'Плохо',
+          3: 'Нормально',
+          4: 'Хорошо',
+          5: 'Отлично',
+        },
+      },
+      autoSaved: 'Сохранено',
+      deleteBlock: 'Удалить блок',
+      deleteBlockConfirm: 'Вы уверены, что хотите удалить этот блок?',
     },
   },
 };
