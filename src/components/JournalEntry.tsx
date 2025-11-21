@@ -1,5 +1,6 @@
 'use client';
 
+// Daily Journal with mood tracking and auto-save
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { DayJournalEntry, JournalBlock, JournalBlockType, MoodLevel } from '@/lib/types';
 import { useTranslations } from '@/components/LanguageProvider';
