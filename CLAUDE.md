@@ -38,6 +38,7 @@
 - Import/export all data as structured Markdown
 - Full theme support (light/dark/system)
 - Custom user-defined categories with icons
+- **Daily Journal** with morning/evening reflections, mood tracking, and auto-save
 
 ---
 
@@ -87,6 +88,7 @@ App (src/app/layout.tsx)
     ├── Date Navigator (calendar + quick nav)
     ├── StatsOverview (metrics dashboard)
     ├── WeeklyProgress (weekly heatmap)
+    ├── JournalEntry (daily journal with mood tracking)
     ├── Habit List (with DnD context)
     │   └── HabitItem[] (sortable cards)
     ├── PersonalizedTipsSection (AI tips)
@@ -139,9 +141,10 @@ App (src/app/layout.tsx)
 │   │
 │   ├── components/             # All React components
 │   │   ├── ui/                 # shadcn/ui components (50+ files)
-│   │   ├── HabitTrackerClient.tsx  # Main app component (790 lines)
+│   │   ├── HabitTrackerClient.tsx  # Main app component (850+ lines)
 │   │   ├── HabitItem.tsx       # Individual habit card/row
 │   │   ├── AddHabitDialog.tsx  # Create/edit habit form
+│   │   ├── JournalEntry.tsx    # Daily journal with block editor
 │   │   ├── PersonalizedTipsSection.tsx  # AI tips display
 │   │   ├── StatsOverview.tsx   # Analytics dashboard
 │   │   ├── WeeklyProgress.tsx  # Weekly heatmap
@@ -234,6 +237,24 @@ interface OpenRouterSettings {
   modelName?: string              // Default: deepseek/deepseek-chat
   systemPrompt?: string
 }
+
+// Journal system types
+type JournalBlockType = 'morning' | 'evening' | 'free_text'
+type MoodLevel = 1 | 2 | 3 | 4 | 5  // 1 = very bad, 5 = excellent
+
+interface JournalBlock {
+  id: string                      // UUID v4
+  type: JournalBlockType          // Block type
+  content: string                 // Text content
+}
+
+interface DayJournalEntry {
+  date: string                    // YYYY-MM-DD format
+  blocks: JournalBlock[]          // Array of journal blocks
+  mood?: MoodLevel                // Optional mood rating
+  createdAt: string               // ISO date string
+  updatedAt: string               // ISO date string
+}
 ```
 
 ### localStorage Keys
@@ -242,6 +263,7 @@ interface OpenRouterSettings {
 |-----|------|---------|
 | `habits` | `Habit[]` | All habit data |
 | `userCategories` | `UserDefinedCategory[]` | Custom categories |
+| `journal_entries` | `DayJournalEntry[]` | Daily journal entries |
 | `openrouter_settings` | `OpenRouterSettings \| null` | AI API config |
 | `compact_habit_view` | `boolean` | View mode toggle |
 | `minimal_habit_view` | `boolean` | View mode toggle |
@@ -567,6 +589,19 @@ const isPositive = habit.type === 'positive'
 # Standard Categories Export (for AI reference)
 ### Category Name (Russian)
 - key: IconKey, name: Icon Name (Russian)
+
+# Journal Export
+
+## 2024-11-17
+- Mood: 4
+### Morning Reflection
+Morning thoughts and intentions...
+
+### Evening Reflection
+Evening reflection content...
+
+### Free Notes
+Any additional notes...
 ```
 
 **Parsing Logic**:
@@ -575,6 +610,7 @@ const isPositive = habit.type === 'positive'
 - Validates icon keys against `availableIcons`
 - Generates new UUIDs for imported habits
 - Preserves completion history
+- Imports journal entries (skips duplicate dates)
 
 ### 5. Date Navigation
 
@@ -680,6 +716,53 @@ Display in PersonalizedTipsSection
 - Network error: Show error toast
 - Timeout (30s): Show timeout message
 - Invalid response: Show parsing error
+
+### 9. Daily Journal System
+
+**Location**: `src/components/JournalEntry.tsx`
+
+**Features**:
+- Three block types: morning reflection, evening reflection, free text
+- Mood tracking (5-level scale with emojis)
+- Auto-save with 500ms debounce
+- Collapsible UI to reduce visual clutter
+- Date-specific entries (one entry per day)
+
+**Block Types**:
+```typescript
+type JournalBlockType = 'morning' | 'evening' | 'free_text'
+```
+
+**Mood Levels**:
+```typescript
+type MoodLevel = 1 | 2 | 3 | 4 | 5
+// 1 = Very bad (😢)
+// 2 = Bad (😕)
+// 3 = Okay (😐)
+// 4 = Good (🙂)
+// 5 = Excellent (😄)
+```
+
+**Auto-Save Flow**:
+```
+User types in text area
+  ↓
+Debounce 500ms
+  ↓
+Check if content exists
+  ↓
+Update entry with new updatedAt timestamp
+  ↓
+Save to localStorage via onSaveEntry callback
+  ↓
+Show "Auto-saved" indicator for 2 seconds
+```
+
+**Data Storage**:
+- Key: `journal_entries`
+- Type: `DayJournalEntry[]`
+- One entry per date (YYYY-MM-DD)
+- Blocks are nested within each entry
 
 ---
 
@@ -1105,6 +1188,7 @@ Before committing changes:
 
 | Date | Change |
 |------|--------|
+| 2025-11-21 | Added Daily Journal feature with mood tracking, auto-save, and Markdown export/import |
 | 2024-11-17 | Initial CLAUDE.md creation |
 
 ---

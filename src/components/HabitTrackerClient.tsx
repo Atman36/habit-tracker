@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Habit, HabitCompletion, OpenRouterSettings, HabitType, HabitStatus, UserDefinedCategory } from '@/lib/types';
+import type { Habit, HabitCompletion, OpenRouterSettings, HabitType, HabitStatus, UserDefinedCategory, DayJournalEntry, MoodLevel } from '@/lib/types';
 import useLocalStorage from '@/lib/localStorage';
 import { AddHabitDialog } from './AddHabitDialog';
 import { HabitItem } from './HabitItem';
 import { PersonalizedTipsSection } from './PersonalizedTipsSection';
+import { JournalEntry } from './JournalEntry';
 import { StatsOverview } from './StatsOverview';
 import { WeeklyProgress } from './WeeklyProgress'; 
 import { Button } from '@/components/ui/button';
@@ -48,14 +49,16 @@ import { getLocalizedCategoryName, getGoalFallbackForCategory, getGenericGoalFal
 interface ParsedImportData {
   habits: Omit<Habit, 'id' | 'streak'>[];
   userCategories: UserDefinedCategory[];
+  journalEntries: DayJournalEntry[];
 }
 
 const parseHabitMarkdown = (markdown: string, language: Language = defaultLanguage): ParsedImportData => {
   const habits: Omit<Habit, 'id' | 'streak'>[] = [];
   const userCategories: UserDefinedCategory[] = [];
-  
-  const sections = markdown.split(/^# (Habits Export|User Categories Export|Standard Categories Export)$/m);
-  let currentSection: 'habits' | 'user_categories' | 'standard_categories' | null = null;
+  const journalEntries: DayJournalEntry[] = [];
+
+  const sections = markdown.split(/^# (Habits Export|User Categories Export|Standard Categories Export|Journal Export)$/m);
+  let currentSection: 'habits' | 'user_categories' | 'standard_categories' | 'journal' | null = null;
 
   for (const sectionContent of sections) {
     const trimmedContent = sectionContent.trim();
@@ -67,7 +70,10 @@ const parseHabitMarkdown = (markdown: string, language: Language = defaultLangua
       continue;
     } else if (trimmedContent === 'Standard Categories Export') {
       // This section is for AI reference, not direct app import, so we skip processing its content.
-      currentSection = 'standard_categories'; 
+      currentSection = 'standard_categories';
+      continue;
+    } else if (trimmedContent === 'Journal Export') {
+      currentSection = 'journal';
       continue;
     }
     if (!currentSection || !trimmedContent) continue;
@@ -177,27 +183,90 @@ const parseHabitMarkdown = (markdown: string, language: Language = defaultLangua
         categoryLines.forEach(line => {
             const idMatch = line.match(/- id: ([\w-]+)/);
             const nameMatch = line.match(/name: ([^,]+),/);
-            const iconKeyMatch = line.match(/iconKey: ([\w\d_]+)/); 
+            const iconKeyMatch = line.match(/iconKey: ([\w\d_]+)/);
 
             if (idMatch && nameMatch && iconKeyMatch) {
                 const id = idMatch[1].trim();
                 const name = nameMatch[1].trim();
                 const iconKey = iconKeyMatch[1].trim();
-                if (availableIcons[iconKey]) { 
+                if (availableIcons[iconKey]) {
                     userCategories.push({ id, name, iconKey });
                 } else {
                     console.warn(`Imported user category "${name}" has an invalid or missing iconKey: "${iconKey}". Skipping category.`);
                 }
             }
         });
+    } else if (currentSection === 'journal') {
+        // Parse journal entries
+        const entryBlocks = trimmedContent.split(/^## /m).filter(block => block.trim().length > 0);
+        entryBlocks.forEach(block => {
+          const lines = block.split('\n');
+          const dateLine = lines[0]?.trim();
+          if (!dateLine || !isValid(parseISO(dateLine))) return;
+
+          const entry: DayJournalEntry = {
+            date: dateLine,
+            blocks: [],
+            mood: undefined,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          let currentBlockId: string | null = null;
+          let currentBlockType: 'morning' | 'evening' | 'free_text' | null = null;
+          let currentBlockContent: string[] = [];
+
+          lines.slice(1).forEach(line => {
+            if (line.startsWith('- Mood: ')) {
+              const moodStr = line.substring('- Mood: '.length).trim();
+              const moodNum = parseInt(moodStr, 10);
+              if (moodNum >= 1 && moodNum <= 5) {
+                entry.mood = moodNum as MoodLevel;
+              }
+            } else if (line.startsWith('### Morning')) {
+              if (currentBlockId && currentBlockType) {
+                entry.blocks.push({ id: currentBlockId, type: currentBlockType, content: currentBlockContent.join('\n').trim() });
+              }
+              currentBlockId = crypto.randomUUID();
+              currentBlockType = 'morning';
+              currentBlockContent = [];
+            } else if (line.startsWith('### Evening')) {
+              if (currentBlockId && currentBlockType) {
+                entry.blocks.push({ id: currentBlockId, type: currentBlockType, content: currentBlockContent.join('\n').trim() });
+              }
+              currentBlockId = crypto.randomUUID();
+              currentBlockType = 'evening';
+              currentBlockContent = [];
+            } else if (line.startsWith('### Free')) {
+              if (currentBlockId && currentBlockType) {
+                entry.blocks.push({ id: currentBlockId, type: currentBlockType, content: currentBlockContent.join('\n').trim() });
+              }
+              currentBlockId = crypto.randomUUID();
+              currentBlockType = 'free_text';
+              currentBlockContent = [];
+            } else if (currentBlockType) {
+              currentBlockContent.push(line);
+            }
+          });
+
+          // Add last block
+          if (currentBlockId && currentBlockType) {
+            entry.blocks.push({ id: currentBlockId, type: currentBlockType, content: currentBlockContent.join('\n').trim() });
+          }
+
+          if (entry.blocks.length > 0 || entry.mood !== undefined) {
+            journalEntries.push(entry);
+          }
+        });
     }
   }
-  return { habits, userCategories };
+  return { habits, userCategories, journalEntries };
 };
 
 const formatHabitToMarkdown = (
   habits: Habit[],
   userCategories: UserDefinedCategory[],
+  journalEntries: DayJournalEntry[],
   language: Language = defaultLanguage
 ): string => {
   let markdown = "# Habits Export\n\n";
@@ -285,6 +354,25 @@ const formatHabitToMarkdown = (
     });
     markdown += "\n";
   });
+
+  // Journal Export
+  if (journalEntries.length > 0) {
+    markdown += "# Journal Export\n\n";
+    const sortedEntries = [...journalEntries].sort((a, b) => a.date.localeCompare(b.date));
+    sortedEntries.forEach(entry => {
+      markdown += `## ${entry.date}\n`;
+      if (entry.mood !== undefined) {
+        markdown += `- Mood: ${entry.mood}\n`;
+      }
+      entry.blocks.forEach(block => {
+        const blockTitle = block.type === 'morning' ? 'Morning Reflection' :
+                          block.type === 'evening' ? 'Evening Reflection' : 'Free Notes';
+        markdown += `### ${blockTitle}\n`;
+        markdown += `${block.content}\n\n`;
+      });
+      markdown += "\n";
+    });
+  }
 
   return markdown;
 };
@@ -385,6 +473,7 @@ export function HabitTrackerClient() {
   const [showWeeklyProgressSection, setShowWeeklyProgressSection] = useLocalStorage<boolean>('show_weekly_progress_section', true);
   
   const [openRouterSettings, setOpenRouterSettings] = useLocalStorage<OpenRouterSettings | null>('openrouter_settings', null);
+  const [journalEntries, setJournalEntries] = useLocalStorage<DayJournalEntry[]>('journal_entries', []);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   useEffect(() => setMounted(true), []);
   
@@ -502,17 +591,17 @@ export function HabitTrackerClient() {
   }, [mounted]); 
 
   const handleExportHabits = () => {
-    if (habits.length === 0 && userCategories.length === 0) {
+    if (habits.length === 0 && userCategories.length === 0 && journalEntries.length === 0) {
       toast({ title: t.toasts.exportEmptyTitle, description: t.toasts.exportEmptyDescription, variant: 'default' });
       return;
     }
     const habitsToExport = habits.map(h => ({
-        ...h, 
-        type: h.type || 'positive', 
+        ...h,
+        type: h.type || 'positive',
         icon: h.icon || defaultIconKey,
-        createdAt: h.createdAt || new Date().toISOString() 
+        createdAt: h.createdAt || new Date().toISOString()
     }));
-    const markdownContent = formatHabitToMarkdown(habitsToExport, userCategories, language);
+    const markdownContent = formatHabitToMarkdown(habitsToExport, userCategories, journalEntries, language);
     const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -533,25 +622,25 @@ export function HabitTrackerClient() {
       reader.onload = (e) => {
         try {
           const markdownContent = e.target?.result as string;
-          const { habits: importedHabitData, userCategories: importedUserCategories } = parseHabitMarkdown(markdownContent, language);
+          const { habits: importedHabitData, userCategories: importedUserCategories, journalEntries: importedJournalEntries } = parseHabitMarkdown(markdownContent, language);
 
           const newHabitsWithIdsAndStreak = importedHabitData.map(hData => ({
             ...hData,
             id: crypto.randomUUID(),
-            createdAt: hData.createdAt || new Date().toISOString(), 
+            createdAt: hData.createdAt || new Date().toISOString(),
             type: hData.type || 'positive',
-            icon: hData.icon || defaultIconKey, 
+            icon: hData.icon || defaultIconKey,
             completions: (hData.completions || []).map(c => ({...c, status: c.status || 'completed'})),
-            streak: 0, 
+            streak: 0,
           }));
-          
-          setHabits(recalculateAllStreaks(newHabitsWithIdsAndStreak)); 
-          
+
+          setHabits(recalculateAllStreaks(newHabitsWithIdsAndStreak));
+
           if (importedUserCategories.length > 0) {
             setUserCategories(prevUserCategories => {
               const existingIds = new Set(prevUserCategories.map(uc => uc.id));
               const newUniqueCategories = importedUserCategories.filter(iuc => {
-                if (!availableIcons[iuc.iconKey]) { 
+                if (!availableIcons[iuc.iconKey]) {
                   console.warn(`Imported user category "${iuc.name}" uses an invalid iconKey "${iuc.iconKey}". Skipping this user category.`);
                   return false;
                 }
@@ -560,13 +649,23 @@ export function HabitTrackerClient() {
               return [...prevUserCategories, ...newUniqueCategories];
             });
           }
+
+          // Import journal entries
+          if (importedJournalEntries.length > 0) {
+            setJournalEntries(prevEntries => {
+              const existingDates = new Set(prevEntries.map(e => e.date));
+              const newEntries = importedJournalEntries.filter(entry => !existingDates.has(entry.date));
+              return [...prevEntries, ...newEntries];
+            });
+          }
+
           toast({ title: t.toasts.importSuccessTitle, description: t.toasts.importSuccessDescription(newHabitsWithIdsAndStreak.length) });
         } catch (error) {
           console.error("Error importing data:", error);
           toast({ title: t.toasts.importErrorTitle, description: t.toasts.importErrorDescription, variant: 'destructive' });
         } finally {
             if (fileInputRef.current) {
-                fileInputRef.current.value = ""; 
+                fileInputRef.current.value = "";
             }
         }
       };
@@ -579,6 +678,18 @@ export function HabitTrackerClient() {
     setIsApiKeyDialogOpen(false);
     toast({ title: t.toasts.aiSettingsSavedTitle, description: t.toasts.aiSettingsSavedDescription });
   };
+
+  const handleSaveJournalEntry = useCallback((entry: DayJournalEntry) => {
+    setJournalEntries(prev => {
+      const existingIndex = prev.findIndex(e => e.date === entry.date);
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        updated[existingIndex] = entry;
+        return updated;
+      }
+      return [...prev, entry];
+    });
+  }, [setJournalEntries]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -707,6 +818,14 @@ export function HabitTrackerClient() {
 
       {showStatsOverviewSection && <StatsOverview habits={habits} />}
       {showWeeklyProgressSection && <WeeklyProgress habits={habits} />}
+
+      {/* TODO: Re-enable journal after fixing translation loading issue
+      <JournalEntry
+        selectedDate={selectedDateString}
+        journalEntries={journalEntries}
+        onSaveEntry={handleSaveJournalEntry}
+      />
+      */}
 
       {habits.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-border rounded-lg">

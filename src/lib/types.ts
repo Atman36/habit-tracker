@@ -84,3 +84,22 @@ export interface UserAchievements {
   totalPoints: number; // Sum of points earned from unlocked achievements
   level: number; // Calculated level based on total points
 }
+
+// Journal system types
+export type JournalBlockType = 'morning' | 'evening' | 'free_text';
+
+export type MoodLevel = 1 | 2 | 3 | 4 | 5; // 1 = very bad, 5 = excellent
+
+export interface JournalBlock {
+  id: string;
+  type: JournalBlockType;
+  content: string;
+}
+
+export interface DayJournalEntry {
+  date: string; // YYYY-MM-DD format
+  blocks: JournalBlock[];
+  mood?: MoodLevel;
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+}
