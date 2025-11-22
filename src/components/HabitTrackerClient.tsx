@@ -819,11 +819,13 @@ export function HabitTrackerClient() {
       {showStatsOverviewSection && <StatsOverview habits={habits} />}
       {showWeeklyProgressSection && <WeeklyProgress habits={habits} />}
 
+      {/* TODO: Re-enable journal after fixing translation loading issue
       <JournalEntry
         selectedDate={selectedDateString}
         journalEntries={journalEntries}
         onSaveEntry={handleSaveJournalEntry}
       />
+      */}
 
       {habits.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-border rounded-lg">
