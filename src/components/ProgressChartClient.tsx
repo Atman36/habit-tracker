@@ -84,19 +84,19 @@ export function ProgressChartClient({ habit }: ProgressChartClientProps) {
       <ChartContainer config={currentChartConfig} className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border) / 0.2)" />
             <XAxis
               dataKey="date"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              fontSize={12}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-mono)' }}
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              fontSize={12}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-mono)' }}
               ticks={[-1, 0, 1]} // Include -1 if failed is represented this way
               domain={[-1.2, 1.2]} // Adjust domain slightly for padding if using -1
               tickFormatter={(value, index) => {
@@ -110,6 +110,7 @@ export function ProgressChartClient({ habit }: ProgressChartClientProps) {
               cursor={false}
               content={<ChartTooltipContent
                 indicator="dot"
+                className="rounded-card border-2 border-border bg-card shadow-hard-sm"
                 labelFormatter={(label, payload) => {
                     if (payload && payload.length > 0 && payload[0].payload) {
                         return format(parseISO(payload[0].payload.fullDate), "PPP", { locale: ru });
@@ -119,7 +120,7 @@ export function ProgressChartClient({ habit }: ProgressChartClientProps) {
                 formatter={(value, name, props) => {
                   const entry = props.payload;
                   let statusLabel = '';
-                  
+
                   if (entry.status === 'completed') {
                     statusLabel = habit.type === 'negative' ? chartConfigBase.completedNegative.label : chartConfigBase.completedPositive.label;
                   } else if (entry.status === 'failed') {
@@ -131,15 +132,23 @@ export function ProgressChartClient({ habit }: ProgressChartClientProps) {
                 }}
               />}
             />
-            <Bar dataKey="value" radius={4} barSize={10}>
+            <Bar dataKey="value" radius={3} barSize={10} stroke="hsl(var(--border))" strokeWidth={1.5}>
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={
-                  entry.status === 'completed' 
-                    ? (habit.type === 'negative' ? currentChartConfig.value.color : currentChartConfig.value.color)
-                    : entry.status === 'failed' 
-                      ? currentChartConfig.failed_value.color
-                      : 'hsl(var(--muted))' // Color for not marked or skipped
-                } />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={
+                    entry.status === 'completed'
+                      ? 'hsl(var(--chart-1))'
+                      : entry.status === 'failed'
+                        ? 'hsl(var(--destructive))'
+                        : 'hsl(var(--card))'
+                  }
+                  stroke={
+                    entry.status === 'completed' || entry.status === 'failed'
+                      ? 'hsl(var(--border))'
+                      : 'hsl(var(--border) / 0.25)'
+                  }
+                />
               ))}
             </Bar>
           </BarChart>
