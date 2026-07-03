@@ -2,9 +2,10 @@
 'use client';
 
 import type { Habit, HabitCompletion } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, subDays, eachDayOfInterval, isSameDay, parseISO, startOfDay } from 'date-fns';
-import { TrendingUp, CheckCircle2, Repeat, Award, BarChartBig } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { format, subDays, eachDayOfInterval, parseISO, startOfDay } from 'date-fns';
+import { TrendingUp, Repeat, Award, BarChartBig, type LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import React from 'react';
 
 interface StatsOverviewProps {
@@ -15,6 +16,14 @@ const getCompletionsOnDate = (completions: HabitCompletion[], date: Date, status
   const dateString = format(date, 'yyyy-MM-dd');
   return completions.some(c => c.date === dateString && c.status === status);
 };
+
+interface MetricTile {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+  tileClassName: string;
+  iconClassName: string;
+}
 
 export function StatsOverview({ habits }: StatsOverviewProps) {
   const today = startOfDay(new Date());
@@ -47,14 +56,14 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
           }
         }
       });
-      
+
       if (daysSinceCreationInInterval > 0) {
         totalCompletionPercentageSum += (completedCountLast30Days / daysSinceCreationInInterval) * 100;
         activeHabitsForPercentage++;
       }
     }
   });
-  
+
   const averageCompletionPercentage = activeHabitsForPercentage > 0 ? Math.round(totalCompletionPercentageSum / activeHabitsForPercentage) : 0;
 
 
@@ -79,59 +88,82 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
     return "Каждый день - новая возможность стать лучше! 🌱";
   };
 
-  const stats = [
-    {
-      label: "Выполнено сегодня",
-      value: `${habitsCompletedToday} из ${habits.length}`,
-      icon: CheckCircle2,
-      color: "text-green-500",
-    },
+  const metricTiles: MetricTile[] = [
     {
       label: "% выполнения (30 дн.)",
       value: `${averageCompletionPercentage}%`,
       icon: TrendingUp,
-      color: "text-blue-500",
+      tileClassName: "bg-background/10 border-background/20",
+      iconClassName: "text-secondary",
     },
     {
       label: "Средняя серия",
       value: `${averageStreak} дн.`,
       icon: Repeat,
-      color: "text-orange-500",
+      tileClassName: "bg-background/10 border-background/20",
+      iconClassName: "text-primary",
     },
     {
       label: "Лучшая серия",
       value: `${bestStreak} дн.`,
       icon: Award,
-      color: "text-yellow-500",
+      tileClassName: "bg-amber border-background/20 text-foreground",
+      iconClassName: "text-foreground",
     },
     {
       label: "Выполнено за месяц",
       value: totalCompletionsLast30Days,
       icon: BarChartBig,
-      color: "text-purple-500",
+      tileClassName: "bg-background/10 border-background/20",
+      iconClassName: "text-accent",
     },
   ];
 
   return (
-    <Card className="my-6 shadow-md">
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold">Обзор статистики</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="my-6 bg-foreground text-background dark:bg-card dark:text-card-foreground">
+      <CardContent className="p-5">
         {habits.length === 0 ? (
-          <p className="text-muted-foreground">{getMotivationalMessage()}</p>
+          <p className="font-mono text-xs italic opacity-70">{getMotivationalMessage()}</p>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
-              {stats.map((stat) => (
-                <div key={stat.label} className="flex flex-col items-center text-center p-3 bg-card rounded-lg shadow-sm border min-h-[100px] justify-center">
-                  <stat.icon className={`h-8 w-8 mb-2 ${stat.color}`} />
-                  <p className="text-xs text-muted-foreground mb-1 leading-tight">{stat.label}</p>
-                  <p className="text-lg font-bold leading-none">{stat.value}</p>
+            <p className="font-mono text-[10px] uppercase tracking-wider opacity-60">Сегодня</p>
+            <p className="mt-1 font-display font-black text-4xl">
+              <span className="text-accent">{habitsCompletedToday}</span>
+              <span>/{habits.length}</span>
+            </p>
+
+            <div className="mt-3 flex gap-1">
+              {habits.map(habit => {
+                const doneToday = getCompletionsOnDate(habit.completions, today);
+                return (
+                  <div
+                    key={habit.id}
+                    className={cn(
+                      "h-2 flex-1 rounded-full border-2 border-background/30",
+                      doneToday ? "bg-accent border-accent" : "bg-background/10"
+                    )}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              {metricTiles.map(tile => (
+                <div
+                  key={tile.label}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-panel border-2 p-3 text-center",
+                    tile.tileClassName
+                  )}
+                >
+                  <tile.icon className={cn("h-5 w-5", tile.iconClassName)} />
+                  <p className="font-display font-bold text-lg leading-none">{tile.value}</p>
+                  <p className="font-mono text-[10px] uppercase tracking-wide opacity-70 leading-tight">{tile.label}</p>
                 </div>
               ))}
             </div>
-            <p className="text-sm text-center text-muted-foreground italic">{getMotivationalMessage()}</p>
+
+            <p className="mt-5 text-center font-mono text-xs italic opacity-70">{getMotivationalMessage()}</p>
           </>
         )}
       </CardContent>

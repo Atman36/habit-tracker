@@ -14,12 +14,12 @@ import {
   parseISO,
   isBefore,
   isAfter,
-  startOfDay, 
+  startOfDay,
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, CalendarRange } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
@@ -37,30 +37,29 @@ interface DayData {
   isToday: boolean;
 }
 
-const getProgressColor = (percentage: number, activeHabits: number): string => {
-  if (activeHabits === 0) return 'bg-muted/30'; 
-  if (percentage === 0 && activeHabits > 0) return 'bg-muted/50'; 
-  if (percentage < 50) return 'bg-red-500/70 dark:bg-red-600/60';
-  if (percentage <= 80) return 'bg-yellow-500/70 dark:bg-yellow-600/60';
-  return 'bg-green-500/70 dark:bg-green-600/60';
+const getProgressBarColor = (percentage: number, activeHabits: number): string => {
+  if (activeHabits === 0 || percentage === 0) return 'bg-card';
+  if (percentage < 40) return 'bg-success-1';
+  if (percentage < 70) return 'bg-success-2';
+  if (percentage < 100) return 'bg-success-3';
+  return 'bg-success-4';
 };
 
-const getProgressTextColor = (percentage: number, activeHabits: number): string => {
-    if (activeHabits === 0) return 'text-muted-foreground';
-    if (percentage === 0 && activeHabits > 0) return 'text-muted-foreground';
-    if (percentage < 50) return 'text-red-100 dark:text-red-200';
-    if (percentage <= 80) return 'text-yellow-100 dark:text-yellow-900';
-    return 'text-green-100 dark:text-green-200';
-}
-
+const LEGEND_ITEMS = [
+  { className: 'bg-card', label: '0%' },
+  { className: 'bg-success-1', label: '1–39%' },
+  { className: 'bg-success-2', label: '40–69%' },
+  { className: 'bg-success-3', label: '70–99%' },
+  { className: 'bg-success-4', label: '100%' },
+];
 
 export function WeeklyProgress({ habits }: WeeklyProgressProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const weekInterval = useMemo(() => {
     return {
-      start: startOfWeek(currentDate, { weekStartsOn: 1 }), 
-      end: endOfWeek(currentDate, { weekStartsOn: 1 }), 
+      start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+      end: endOfWeek(currentDate, { weekStartsOn: 1 }),
     };
   }, [currentDate]);
 
@@ -68,13 +67,13 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
     const daysInCurrentWeek = eachDayOfInterval(weekInterval);
     return daysInCurrentWeek.map(day => {
       const dayString = format(day, 'yyyy-MM-dd');
-      
+
       const activeHabitsOnDay = habits.filter(habit => {
         const habitCreationDayStart = startOfDay(parseISO(habit.createdAt));
         // Привычка активна, если 'day' не раньше дня создания привычки
         return !isBefore(day, habitCreationDayStart);
       });
-      
+
       const completedHabitsOnDay = activeHabitsOnDay.filter(habit =>
         habit.completions.some(c => c.date === dayString && c.status === 'completed')
       ).length;
@@ -82,11 +81,11 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
       const progressPercentage = activeHabitsOnDay.length > 0
         ? Math.round((completedHabitsOnDay / activeHabitsOnDay.length) * 100)
         : 0;
-        
+
       return {
         date: day,
-        dayName: format(day, 'E', { locale: ru }), 
-        dateOfMonth: format(day, 'd'), 
+        dayName: format(day, 'E', { locale: ru }),
+        dateOfMonth: format(day, 'd'),
         activeHabitsCount: activeHabitsOnDay.length,
         completedHabitsCount: completedHabitsOnDay,
         progressPercentage: progressPercentage,
@@ -118,56 +117,51 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
 
 
   return (
-    <Card className="my-6 shadow-md">
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-          <div className="flex items-center gap-2">
-            <CalendarRange className="h-6 w-6 text-primary" />
-            <CardTitle className="text-xl font-semibold">Прогресс за неделю</CardTitle>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')} aria-label="Предыдущая неделя">
+    <Card className="my-6">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Неделя</span>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigateWeek('prev')} aria-label="Предыдущая неделя">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium w-32 text-center">
-              {format(weekInterval.start, 'd MMM', { locale: ru })} - {format(weekInterval.end, 'd MMM yyyy', { locale: ru })}
-            </span>
-            <Button variant="outline" size="icon" onClick={() => navigateWeek('next')} disabled={!canGoToNextWeek} aria-label="Следующая неделя">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigateWeek('next')} disabled={!canGoToNextWeek} aria-label="Следующая неделя">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <CardDescription>Отслеживайте выполнение привычек по дням недели.</CardDescription>
+        <p className="font-mono text-xs text-muted-foreground">
+          {format(weekInterval.start, 'd MMM', { locale: ru })} – {format(weekInterval.end, 'd MMM yyyy', { locale: ru })}
+        </p>
       </CardHeader>
       <CardContent>
         {habits.length === 0 ? (
           <p className="text-muted-foreground">Нет привычек для отображения недельного прогресса.</p>
         ) : (
           <>
-            <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-6">
+            <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mb-6">
               {daysOfWeekData.map(dayData => (
                 <div
                   key={dayData.date.toISOString()}
-                  className={cn(
-                    "flex flex-col items-center p-2 rounded-md border",
-                    dayData.isToday ? "border-primary ring-1 ring-primary shadow-lg" : "border-border"
-                  )}
+                  className="flex flex-col items-center gap-1"
                 >
-                  <span className="text-xs font-medium text-muted-foreground">{dayData.dayName}</span>
-                  <span className={cn("text-lg font-bold mb-1", dayData.isToday ? "text-primary" : "")}>
-                    {dayData.dateOfMonth}
-                  </span>
-                  <div className={cn(
-                      "w-full h-6 rounded flex items-center justify-center mb-1",
-                      getProgressColor(dayData.progressPercentage, dayData.activeHabitsCount)
+                  <span className="font-mono text-[10px] uppercase text-muted-foreground">{dayData.dayName}</span>
+                  <div
+                    className={cn(
+                      "relative w-full h-[34px] overflow-hidden rounded border-2 border-border bg-card",
+                      dayData.isToday && "border-primary"
                     )}
                     title={`${dayData.progressPercentage}% выполнено`}
                   >
-                     <span className={cn("text-xs font-semibold", getProgressTextColor(dayData.progressPercentage, dayData.activeHabitsCount))}>
-                        {dayData.activeHabitsCount > 0 ? `${dayData.progressPercentage}%` : '-'}
-                     </span>
+                    <div
+                      className={cn(
+                        "absolute bottom-0 left-0 w-full",
+                        getProgressBarColor(dayData.progressPercentage, dayData.activeHabitsCount)
+                      )}
+                      style={{ height: `${dayData.activeHabitsCount > 0 ? dayData.progressPercentage : 0}%` }}
+                    />
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="font-mono text-[10px] text-muted-foreground">
                     {dayData.activeHabitsCount > 0 ? `${dayData.completedHabitsCount}/${dayData.activeHabitsCount}` : '0/0'}
                   </span>
                 </div>
@@ -182,28 +176,13 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
               <Progress value={weeklyStats.overallPercentage} className="h-3" />
             </div>
 
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span className="font-semibold">Легенда:</span>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm bg-green-500/70"></div>
-                <span>{'>'}80%</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm bg-yellow-500/70"></div>
-                <span>50-80%</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm bg-red-500/70"></div>
-                <span>{'<'}50%</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm bg-muted/50"></div>
-                <span>0%</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm bg-muted/30"></div>
-                <span>Нет активных</span>
-              </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              {LEGEND_ITEMS.map(item => (
+                <div key={item.label} className="flex items-center gap-1.5">
+                  <div className={cn("h-3 w-3 rounded border-2 border-border", item.className)} />
+                  <span className="font-mono text-[10px] text-muted-foreground">{item.label}</span>
+                </div>
+              ))}
             </div>
           </>
         )}
