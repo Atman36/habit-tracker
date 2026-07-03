@@ -679,19 +679,9 @@ export function HabitTrackerClient() {
     setSelectedDate(startOfDay(subDays(new Date(), 2)));
   };
 
-  if (!mounted) {
-     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
-        <ListChecks className="h-16 w-16 animate-pulse text-primary" />
-        <p className="text-muted-foreground mt-4">Загрузка привычек...</p>
-      </div>
-    );
-  }
-
-  const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
-
   // Достижения/уровень: производные данные из habits (см. lib/achievements.ts).
   // Не персистентны — пересчитываются от пустой базы при каждом изменении habits.
+  // Хуки обязаны выполняться до раннего return (Rules of Hooks).
   const userAchievements = useMemo(
     () => updateUserAchievements(habits, EMPTY_USER_ACHIEVEMENTS),
     [habits]
@@ -708,6 +698,18 @@ export function HabitTrackerClient() {
     }
     return points;
   }, [userAchievements]);
+
+  if (!mounted) {
+     return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
+        <ListChecks className="h-16 w-16 animate-pulse text-primary" />
+        <p className="text-muted-foreground mt-4">Загрузка привычек...</p>
+      </div>
+    );
+  }
+
+  const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
+
   const xpPercent = Math.min(100, Math.round((userAchievements.totalPoints / nextLevelThreshold) * 100));
   const bestStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak)) : 0;
 
