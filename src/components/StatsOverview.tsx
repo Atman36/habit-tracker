@@ -82,10 +82,10 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
 
   const getMotivationalMessage = () => {
     if (habits.length === 0) return "Добавьте привычки, чтобы увидеть статистику!";
-    if (averageCompletionPercentage > 75) return "Отличная работа! Вы на высоте! 💪";
-    if (averageCompletionPercentage > 50) return "Хороший прогресс! Продолжайте в том же духе. 🚀";
-    if (averageCompletionPercentage > 25) return "Неплохое начало! Маленькие шаги ведут к большим результатам. ✨";
-    return "Каждый день - новая возможность стать лучше! 🌱";
+    if (averageCompletionPercentage > 75) return "Отличная работа! Вы на высоте!";
+    if (averageCompletionPercentage > 50) return "Хороший прогресс! Продолжайте в том же духе.";
+    if (averageCompletionPercentage > 25) return "Неплохое начало! Маленькие шаги ведут к большим результатам.";
+    return "Каждый день - новая возможность стать лучше!";
   };
 
   const metricTiles: MetricTile[] = [
