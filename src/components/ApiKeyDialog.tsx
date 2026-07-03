@@ -16,7 +16,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { KeyRound, Settings, Brain } from 'lucide-react';
+import { KeyRound, Settings, Brain, BrainCircuit } from 'lucide-react';
+
+const FIELD_LABEL_CLASS = 'font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground flex items-center gap-2';
 
 interface ApiKeyDialogProps {
   isOpen: boolean;
@@ -53,7 +55,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
       const currentModel = currentSettings?.modelName || DEFAULT_MODEL_NAME;
       setModelName(currentModel);
       setSystemPrompt(currentSettings?.systemPrompt || DEFAULT_SYSTEM_PROMPT);
-      
+
       // Check if current model is in popular models list
       const isPopularModel = POPULAR_MODELS.some(model => model.value === currentModel);
       if (isPopularModel) {
@@ -93,9 +95,9 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
+          <DialogTitle className="font-display uppercase flex items-center">
             <Settings className="mr-2 h-5 w-5" />
             Настройки OpenRouter AI
           </DialogTitle>
@@ -107,7 +109,10 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
         <div className="grid gap-6 py-4">
           {/* API Key */}
           <div className="space-y-2">
-            <Label htmlFor="apiKey">API Ключ</Label>
+            <Label htmlFor="apiKey" className={FIELD_LABEL_CLASS}>
+              <KeyRound className="h-4 w-4" />
+              API Ключ
+            </Label>
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -122,7 +127,10 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
 
           {/* Model Selection */}
           <div className="space-y-2">
-            <Label htmlFor="model">Модель</Label>
+            <Label htmlFor="model" className={FIELD_LABEL_CLASS}>
+              <BrainCircuit className="h-4 w-4" />
+              Модель
+            </Label>
             <Select value={selectedModel} onValueChange={handleModelChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Выберите модель" />
@@ -135,7 +143,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
                 ))}
               </SelectContent>
             </Select>
-            
+
             {selectedModel === 'custom' && (
               <Input
                 value={customModel}
@@ -144,7 +152,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
                 className="mt-2"
               />
             )}
-            
+
             <p className="text-xs text-muted-foreground">
               Полный список моделей доступен на сайте OpenRouter. Рекомендуем DeepSeek Chat для лучшего соотношения качества и цены.
             </p>
@@ -152,7 +160,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
 
           {/* System Prompt */}
           <div className="space-y-2">
-            <Label htmlFor="systemPrompt" className="flex items-center gap-2">
+            <Label htmlFor="systemPrompt" className={FIELD_LABEL_CLASS}>
               <Brain className="h-4 w-4" />
               Системный промпт
             </Label>
@@ -174,6 +182,8 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
           </Button>
           <Button
             type="button"
+            variant="secondary"
+            className="uppercase font-bold"
             onClick={handleSave}
             disabled={!apiKey.trim() || (selectedModel === 'custom' ? !customModel.trim() : !selectedModel)}
           >

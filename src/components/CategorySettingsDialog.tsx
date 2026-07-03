@@ -15,13 +15,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SelectGroup, SelectLabel } from '@/components/ui/select'; // Keep for Popover grouping if needed
 import { availableIcons, getIconComponent, defaultIconKey } from '@/components/icons';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PlusCircle, Save, Trash2, ChevronDown, LayoutGrid, List } from 'lucide-react';
+import { Save, Trash2, ChevronDown, Sun, Moon, Laptop } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { useTheme } from 'next-themes';
 import { Separator } from '@/components/ui/separator';
 
 interface CategorySettingsDialogProps {
@@ -40,6 +39,15 @@ interface CategorySettingsDialogProps {
   showWeeklyProgressSection: boolean;
   onShowWeeklyProgressSectionToggle: (show: boolean) => void;
 }
+
+const PANEL_HEADING_CLASS = 'font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground';
+const SUB_HEADING_CLASS = 'font-mono text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground';
+
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Светлая', Icon: Sun },
+  { value: 'dark', label: 'Темная', Icon: Moon },
+  { value: 'system', label: 'Системная', Icon: Laptop },
+] as const;
 
 export function CategorySettingsDialog({
   isOpen,
@@ -60,6 +68,7 @@ export function CategorySettingsDialog({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedIconKey, setSelectedIconKey] = useState<string>(defaultIconKey);
   const [isIconPopoverOpen, setIsIconPopoverOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const handleAddCategory = () => {
     if (newCategoryName.trim() && selectedIconKey) {
@@ -68,7 +77,7 @@ export function CategorySettingsDialog({
       setSelectedIconKey(defaultIconKey);
     }
   };
-  
+
   const groupedAvailableIcons = useMemo(() => Object.entries(availableIcons)
     .reduce((acc, [key, iconOption]) => {
     if (!acc[iconOption.category]) {
@@ -83,30 +92,48 @@ export function CategorySettingsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
-          <DialogTitle>Настройки</DialogTitle>
+          <DialogTitle className="font-display uppercase">Настройки</DialogTitle>
           <DialogDescription>
             Управляйте категориями, внешним видом и отображением привычек.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-4">
           {/* Theme and View Settings */}
-          <div className="space-y-4 p-4 border rounded-lg">
-            <h3 className="text-lg font-medium">Внешний вид</h3>
-            
+          <div className="space-y-4 rounded-panel border-2 border-border p-3">
+            <h3 className={PANEL_HEADING_CLASS}>Внешний вид</h3>
+
             {/* Theme Switcher */}
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Тема оформления</Label>
-              <ThemeSwitcher />
+              <Label className={SUB_HEADING_CLASS}>Тема оформления</Label>
+              <div className="flex gap-1">
+                {THEME_OPTIONS.map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    onClick={() => setTheme(value)}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border-2 border-border transition-colors",
+                      theme === value ? "bg-foreground text-background" : "bg-card text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </button>
+                ))}
+              </div>
             </div>
-            
-            <Separator />
+          </div>
+
+          {/* Habit list detail + analytics visibility */}
+          <div className="space-y-4 rounded-panel border-2 border-border p-3">
+            <h3 className={PANEL_HEADING_CLASS}>Детализация списка привычек</h3>
 
             {/* Compact Habit View Toggle */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Детализация списка привычек</Label>
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">Компактный вид (только заголовки)</span>
@@ -140,10 +167,10 @@ export function CategorySettingsDialog({
             </div>
 
             <Separator />
-            
+
             {/* Analytics Sections Toggles */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Отображение аналитики</Label>
+              <h4 className={SUB_HEADING_CLASS}>Отображение аналитики</h4>
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">Показывать "Обзор статистики"</span>
@@ -167,13 +194,12 @@ export function CategorySettingsDialog({
             </div>
           </div>
 
-          <Separator />
           {/* Category Management */}
-          <div className="space-y-4 p-4 border rounded-lg">
-            <h3 className="text-lg font-medium">Управление категориями</h3>
+          <div className="space-y-4 rounded-panel border-2 border-border p-3">
+            <h3 className={PANEL_HEADING_CLASS}>Управление категориями</h3>
             <p className="text-sm text-muted-foreground">Создавайте свои категории для привычек</p>
             <div className="space-y-2">
-              <Label htmlFor="newCategoryName">Название вашей категории</Label>
+              <Label htmlFor="newCategoryName" className={SUB_HEADING_CLASS}>Название вашей категории</Label>
               <Input
                 id="newCategoryName"
                 value={newCategoryName}
@@ -182,7 +208,7 @@ export function CategorySettingsDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>Выберите иконку для категории</Label>
+              <Label className={SUB_HEADING_CLASS}>Выберите иконку для категории</Label>
               <Popover open={isIconPopoverOpen} onOpenChange={setIsIconPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
@@ -195,30 +221,30 @@ export function CategorySettingsDialog({
                 </PopoverTrigger>
                 <PopoverContent className="w-[300px] p-0" align="start">
                   <ScrollArea className="h-[280px]">
-                    <div className="p-2 space-y-1">
+                    <div className="p-2 space-y-2">
                     {Object.entries(groupedAvailableIcons).map(([categoryName, iconsInCategory]) => (
                       <div key={categoryName}>
-                        <p className="text-xs font-semibold text-muted-foreground px-2 py-1">{categoryName}</p>
-                        <div className="grid grid-cols-6 gap-1 px-1">
+                        <p className={cn(SUB_HEADING_CLASS, "px-1 py-1")}>{categoryName}</p>
+                        <div className="grid grid-cols-6 gap-1.5 px-1">
                           {iconsInCategory.map((iconOption) => {
                             const IconComp = iconOption.icon;
+                            const isSelected = selectedIconKey === iconOption.key;
                             return (
-                              <Button
+                              <button
                                 key={iconOption.key}
-                                variant="ghost"
-                                size="icon"
+                                type="button"
                                 title={iconOption.name}
-                                className={cn(
-                                  "h-9 w-9 p-1.5 rounded-md",
-                                  selectedIconKey === iconOption.key && "bg-accent text-accent-foreground"
-                                )}
                                 onClick={() => {
                                   setSelectedIconKey(iconOption.key);
                                   setIsIconPopoverOpen(false);
                                 }}
+                                className={cn(
+                                  "flex h-10 w-10 items-center justify-center rounded-panel border-2 border-border bg-card p-2 transition-colors",
+                                  isSelected && "border-secondary bg-[#F0EBFF] shadow-hard-xs shadow-secondary dark:bg-muted"
+                                )}
                               >
                                 <IconComp className="h-full w-full" />
-                              </Button>
+                              </button>
                             );
                           })}
                         </div>
@@ -229,35 +255,42 @@ export function CategorySettingsDialog({
                 </PopoverContent>
               </Popover>
             </div>
-            <Button onClick={handleAddCategory} disabled={!newCategoryName.trim() || !selectedIconKey}>
+            <Button variant="secondary" onClick={handleAddCategory} disabled={!newCategoryName.trim() || !selectedIconKey}>
               <Save className="mr-2 h-4 w-4" /> Сохранить категорию
             </Button>
-          </div>
 
-          {userCategories.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium">Ваши категории</h3>
-              <ScrollArea className="h-[150px] border rounded-md p-1">
-                <ul className="space-y-1">
-                  {userCategories.map((category) => {
-                    const IconComp = getIconComponent(category.iconKey);
-                    return (
-                      <li key={category.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
-                        <div className="flex items-center gap-2">
-                          <IconComp className="h-5 w-5" />
-                          <span className="truncate" title={category.name}>{category.name}</span>
-                           <span className="text-xs text-muted-foreground ml-1 truncate" title={availableIcons[category.iconKey]?.name}>({availableIcons[category.iconKey]?.name})</span>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={() => onDeleteCategory(category.id)} className="text-destructive hover:text-destructive h-7 w-7">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </ScrollArea>
-            </div>
-          )}
+            {userCategories.length > 0 && (
+              <div className="space-y-2">
+                <h4 className={SUB_HEADING_CLASS}>Ваши категории</h4>
+                <ScrollArea className="h-[150px]">
+                  <ul className="space-y-1.5">
+                    {userCategories.map((category) => {
+                      const IconComp = getIconComponent(category.iconKey);
+                      return (
+                        <li key={category.id} className="flex items-center justify-between gap-2 rounded-field border-2 border-border bg-card p-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-border bg-muted">
+                              <IconComp className="h-4 w-4" />
+                            </span>
+                            <span className="truncate text-sm" title={category.name}>{category.name}</span>
+                            <span className="truncate text-xs text-muted-foreground" title={availableIcons[category.iconKey]?.name}>({availableIcons[category.iconKey]?.name})</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteCategory(category.id)}
+                            aria-label={`Удалить категорию ${category.name}`}
+                            className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-md border-2 border-border text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
