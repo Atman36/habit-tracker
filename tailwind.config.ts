@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 export default {
     darkMode: ["class"],
@@ -9,6 +10,11 @@ export default {
   ],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: ['var(--font-sans)', ...defaultTheme.fontFamily.sans],
+  			display: ['var(--font-display)'],
+  			mono: ['var(--font-mono)', ...defaultTheme.fontFamily.mono]
+  		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
@@ -50,21 +56,31 @@ export default {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
-  			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))',
-  				foreground: 'hsl(var(--sidebar-foreground))',
-  				primary: 'hsl(var(--sidebar-primary))',
-  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-  				accent: 'hsl(var(--sidebar-accent))',
-  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-  				border: 'hsl(var(--sidebar-border))',
-  				ring: 'hsl(var(--sidebar-ring))'
+  			amber: '#FFC53D',
+  			'stop-bg': '#FFF6F3',
+  			success: {
+  				'1': '#EFF7E3',
+  				'2': '#CFEBA4',
+  				'3': '#A8E05F',
+  				'4': '#7CC93F'
   			}
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			sm: 'calc(var(--radius) - 4px)',
+  			frame: '24px',
+  			card: '20px',
+  			panel: '16px',
+  			btn: '13px',
+  			field: '12px'
+  		},
+  		boxShadow: {
+  			'hard-frame': '0 6px 0 hsl(var(--border))',
+  			hard: '0 4px 0 hsl(var(--border))',
+  			'hard-sm': '0 3px 0 hsl(var(--border))',
+  			'hard-xs': '0 2px 0 hsl(var(--border))',
+  			'hard-drag': '0 10px 0 hsl(var(--border))'
   		},
   		keyframes: {
   			'accordion-down': {
