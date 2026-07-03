@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import type { IconOption, UserDefinedCategory } from '@/lib/types';
+import { useState, useMemo } from 'react';
+import type { UserDefinedCategory } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -240,7 +240,7 @@ export function CategorySettingsDialog({
                                 }}
                                 className={cn(
                                   "flex h-10 w-10 items-center justify-center rounded-panel border-2 border-border bg-card p-2 transition-colors",
-                                  isSelected && "border-secondary bg-[#F0EBFF] shadow-hard-xs shadow-secondary dark:bg-muted"
+                                  isSelected && "border-secondary bg-[#F0EBFF] !shadow-[0_2px_0_hsl(var(--secondary))] dark:bg-muted"
                                 )}
                               >
                                 <IconComp className="h-full w-full" />
