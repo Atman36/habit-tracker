@@ -17,11 +17,11 @@ interface AchievementsDialogProps {
   trigger?: React.ReactNode;
 }
 
-const RARITY_COLORS = {
-  common: 'bg-gray-500',
-  rare: 'bg-blue-500',
-  epic: 'bg-purple-500',
-  legendary: 'bg-yellow-500'
+const RARITY_COLORS: Record<Achievement['rarity'], string> = {
+  common: 'bg-card text-foreground',
+  rare: 'bg-accent text-accent-foreground',
+  epic: 'bg-secondary text-secondary-foreground',
+  legendary: 'bg-amber text-foreground'
 };
 
 const RARITY_ICONS = {
@@ -38,57 +38,50 @@ const RARITY_LABELS = {
   legendary: 'Легендарное'
 };
 
+const FILTER_TRIGGER_CLASS = 'rounded-full border-2 border-transparent font-mono text-[11px] uppercase tracking-[0.06em] data-[state=active]:border-border';
+
 function AchievementCard({ achievement, isUnlocked }: { achievement: Achievement; isUnlocked: boolean }) {
   const RarityIcon = RARITY_ICONS[achievement.rarity];
-  const progressPercentage = achievement.maxProgress 
+  const progressPercentage = achievement.maxProgress
     ? Math.round(((achievement.progress || 0) / achievement.maxProgress) * 100)
     : 0;
+  // Deterministic slight tilt per achievement, in the -3..3deg range used for section badges elsewhere.
+  const rotationDeg = (achievement.id.charCodeAt(0) % 7) - 3;
 
   return (
     <Card className={cn(
-      "relative overflow-hidden transition-all duration-200 hover:shadow-md",
-      isUnlocked ? "border-green-200 bg-green-50/50" : "border-gray-200 bg-gray-50/50"
+      "rounded-panel border-2 bg-card shadow-hard-sm",
+      !isUnlocked && "border-dashed"
     )}>
-      {/* Значок разблокировки */}
-      <div className="absolute top-2 right-2">
-        {isUnlocked ? (
-          <CheckCircle className="h-5 w-5 text-green-500" />
-        ) : (
-          <Lock className="h-5 w-5 text-gray-400" />
-        )}
-      </div>
-
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
           {/* Иконка значка */}
-          <div className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-full",
-            isUnlocked ? RARITY_COLORS[achievement.rarity] : "bg-gray-300",
-            isUnlocked ? "text-white" : "text-gray-500"
-          )}>
-            <RarityIcon className="h-6 w-6" />
+          <div
+            className={cn(
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-border",
+              isUnlocked ? RARITY_COLORS[achievement.rarity] : "bg-muted text-muted-foreground grayscale"
+            )}
+            style={{ transform: `rotate(${rotationDeg}deg)` }}
+          >
+            {isUnlocked ? <RarityIcon className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <CardTitle className={cn(
-              "text-lg leading-tight",
+              "font-sans text-base font-bold leading-tight",
               isUnlocked ? "text-foreground" : "text-muted-foreground"
             )}>
               {achievement.name}
             </CardTitle>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge 
-                variant="secondary" 
-                className={cn(
-                  "text-xs",
-                  isUnlocked ? RARITY_COLORS[achievement.rarity] : "bg-gray-300",
-                  isUnlocked ? "text-white" : "text-gray-600"
-                )}
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              <Badge
+                variant="outline"
+                className={cn("text-[9px] px-2 py-0.5", RARITY_COLORS[achievement.rarity])}
               >
                 {RARITY_LABELS[achievement.rarity]}
               </Badge>
               {achievement.category && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-[9px] px-2 py-0.5 text-muted-foreground">
                   {achievement.category}
                 </Badge>
               )}
@@ -99,8 +92,8 @@ function AchievementCard({ achievement, isUnlocked }: { achievement: Achievement
 
       <CardContent className="pt-0">
         <CardDescription className={cn(
-          "text-sm mb-3",
-          isUnlocked ? "text-muted-foreground" : "text-gray-500"
+          "text-xs mb-3",
+          !isUnlocked && "text-muted-foreground"
         )}>
           {achievement.description}
         </CardDescription>
@@ -108,14 +101,14 @@ function AchievementCard({ achievement, isUnlocked }: { achievement: Achievement
         {/* Прогресс */}
         {!isUnlocked && achievement.maxProgress && (
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Прогресс</span>
-              <span className="font-medium">
+              <span className="font-mono text-[11px]">
                 {achievement.progress || 0} / {achievement.maxProgress}
               </span>
             </div>
-            <Progress 
-              value={progressPercentage} 
+            <Progress
+              value={progressPercentage}
               className="h-2"
             />
           </div>
@@ -123,7 +116,7 @@ function AchievementCard({ achievement, isUnlocked }: { achievement: Achievement
 
         {/* Дата получения */}
         {isUnlocked && achievement.unlockedAt && (
-          <div className="text-xs text-muted-foreground mt-2">
+          <div className="font-mono text-[10px] text-muted-foreground mt-2">
             Получено: {new Date(achievement.unlockedAt).toLocaleDateString('ru-RU')}
           </div>
         )}
@@ -140,44 +133,36 @@ function UserStats({ userAchievements }: { userAchievements: UserAchievements })
   }, {} as Record<string, number>);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardContent className="p-4 text-center">
-          <div className="text-2xl font-bold text-primary">{userAchievements.level}</div>
-          <div className="text-sm text-muted-foreground">Уровень</div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardContent className="p-4 text-center">
-          <div className="text-2xl font-bold text-primary">{userAchievements.totalPoints}</div>
-          <div className="text-sm text-muted-foreground">Очки</div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardContent className="p-4 text-center">
-          <div className="text-2xl font-bold text-primary">{unlockedCount}</div>
-          <div className="text-sm text-muted-foreground">Достижения</div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardContent className="p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-500">{rarityStats.legendary || 0}</div>
-          <div className="text-sm text-muted-foreground">Легендарные</div>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="rounded-panel border-2 border-border bg-secondary p-4 text-center shadow-hard-sm text-secondary-foreground">
+        <div className="font-display text-2xl font-bold">{userAchievements.level}</div>
+        <div className="text-sm">Уровень</div>
+      </div>
+
+      <div className="rounded-panel border-2 border-border bg-card p-4 text-center shadow-hard-sm">
+        <div className="font-display text-2xl font-bold">{userAchievements.totalPoints}</div>
+        <div className="text-sm text-muted-foreground">Очки</div>
+      </div>
+
+      <div className="rounded-panel border-2 border-border bg-card p-4 text-center shadow-hard-sm">
+        <div className="font-display text-2xl font-bold">{unlockedCount}</div>
+        <div className="text-sm text-muted-foreground">Значки</div>
+      </div>
+
+      <div className="rounded-panel border-2 border-border bg-amber p-4 text-center shadow-hard-sm text-foreground">
+        <div className="font-display text-2xl font-bold">{rarityStats.legendary || 0}</div>
+        <div className="text-sm">Легендарные</div>
+      </div>
     </div>
   );
 }
 
 export function AchievementsDialog({ achievements, userAchievements, trigger }: AchievementsDialogProps) {
   const [open, setOpen] = useState(false);
-  
+
   const unlockedAchievements = achievements.filter(a => a.unlockedAt);
   const lockedAchievements = achievements.filter(a => !a.unlockedAt);
-  
+
   // Группировка по категориям
   const achievementsByCategory = achievements.reduce((acc, achievement) => {
     const category = achievement.category || 'Прочее';
@@ -198,26 +183,26 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
       <DialogTrigger asChild>
         {trigger || defaultTrigger}
       </DialogTrigger>
-      
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+
+      <DialogContent className="max-w-[760px] max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="font-display uppercase flex items-center gap-2">
             <Trophy className="h-5 w-5" />
             Достижения и значки
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="overflow-y-auto">
           <UserStats userAchievements={userAchievements} />
-          
+
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">Все</TabsTrigger>
-              <TabsTrigger value="unlocked">Получены</TabsTrigger>
-              <TabsTrigger value="locked">В прогрессе</TabsTrigger>
-              <TabsTrigger value="categories">По категориям</TabsTrigger>
+              <TabsTrigger value="all" className={FILTER_TRIGGER_CLASS}>Все</TabsTrigger>
+              <TabsTrigger value="unlocked" className={FILTER_TRIGGER_CLASS}>Получены</TabsTrigger>
+              <TabsTrigger value="locked" className={FILTER_TRIGGER_CLASS}>В прогрессе</TabsTrigger>
+              <TabsTrigger value="categories" className={FILTER_TRIGGER_CLASS}>По категориям</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="all" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {achievements.map((achievement) => (
@@ -229,7 +214,7 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
                 ))}
               </div>
             </TabsContent>
-            
+
             <TabsContent value="unlocked" className="space-y-4">
               {unlockedAchievements.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -249,7 +234,7 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="locked" className="space-y-4">
               {lockedAchievements.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -269,7 +254,7 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="categories" className="space-y-6">
               {Object.entries(achievementsByCategory).map(([category, categoryAchievements]) => (
                 <div key={category}>
