@@ -22,6 +22,9 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
 import { Separator } from '@/components/ui/separator';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { getLocalizedIconName } from '@/lib/iconLocalization';
 
 interface CategorySettingsDialogProps {
   isOpen: boolean;
@@ -44,9 +47,9 @@ const PANEL_HEADING_CLASS = 'font-mono text-[11px] font-semibold uppercase track
 const SUB_HEADING_CLASS = 'font-mono text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground';
 
 const THEME_OPTIONS = [
-  { value: 'light', label: 'Светлая', Icon: Sun },
-  { value: 'dark', label: 'Темная', Icon: Moon },
-  { value: 'system', label: 'Системная', Icon: Laptop },
+  { value: 'light', Icon: Sun },
+  { value: 'dark', Icon: Moon },
+  { value: 'system', Icon: Laptop },
 ] as const;
 
 export function CategorySettingsDialog({
@@ -65,6 +68,8 @@ export function CategorySettingsDialog({
   showWeeklyProgressSection,
   onShowWeeklyProgressSectionToggle,
 }: CategorySettingsDialogProps) {
+  const t = useTranslations();
+  const { language } = useLanguage();
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedIconKey, setSelectedIconKey] = useState<string>(defaultIconKey);
   const [isIconPopoverOpen, setIsIconPopoverOpen] = useState(false);
@@ -94,27 +99,27 @@ export function CategorySettingsDialog({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase">Настройки</DialogTitle>
+          <DialogTitle className="font-display uppercase">{t.categorySettings.title}</DialogTitle>
           <DialogDescription>
-            Управляйте категориями, внешним видом и отображением привычек.
+            {t.categorySettings.description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Theme and View Settings */}
           <div className="space-y-4 rounded-panel border-2 border-border p-3">
-            <h3 className={PANEL_HEADING_CLASS}>Внешний вид</h3>
+            <h3 className={PANEL_HEADING_CLASS}>{t.categorySettings.appearanceTitle}</h3>
 
             {/* Theme Switcher */}
             <div className="flex items-center justify-between">
-              <Label className={SUB_HEADING_CLASS}>Тема оформления</Label>
+              <Label className={SUB_HEADING_CLASS}>{t.categorySettings.themeLabel}</Label>
               <div className="flex gap-1">
-                {THEME_OPTIONS.map(({ value, label, Icon }) => (
+                {THEME_OPTIONS.map(({ value, Icon }) => (
                   <button
                     key={value}
                     type="button"
-                    title={label}
-                    aria-label={label}
+                    title={t.themeSwitcher[value]}
+                    aria-label={t.themeSwitcher[value]}
                     onClick={() => setTheme(value)}
                     className={cn(
                       "flex h-8 w-8 items-center justify-center rounded-full border-2 border-border transition-colors",
@@ -126,17 +131,23 @@ export function CategorySettingsDialog({
                 ))}
               </div>
             </div>
+
+            {/* Language Switcher */}
+            <div className="flex items-center justify-between">
+              <Label className={SUB_HEADING_CLASS}>{t.categorySettings.languageLabel}</Label>
+              <LanguageSwitcher className="w-[150px]" />
+            </div>
           </div>
 
           {/* Habit list detail + analytics visibility */}
           <div className="space-y-4 rounded-panel border-2 border-border p-3">
-            <h3 className={PANEL_HEADING_CLASS}>Детализация списка привычек</h3>
+            <h3 className={PANEL_HEADING_CLASS}>{t.categorySettings.detailLabel}</h3>
 
             {/* Compact Habit View Toggle */}
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">Компактный вид (только заголовки)</span>
+                  <span className="text-sm">{t.categorySettings.compactLabel}</span>
                 </div>
                 <Switch
                   checked={isCompactHabitView}
@@ -146,12 +157,12 @@ export function CategorySettingsDialog({
                       onMinimalHabitViewToggle(false); // Disable minimal when compact is enabled
                     }
                   }}
-                  aria-label="Компактный вид привычек"
+                  aria-label={t.categorySettings.compactLabel}
                 />
               </div>
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">Узкий вид (строчки с чек-боксами)</span>
+                  <span className="text-sm">{t.categorySettings.minimalLabel}</span>
                 </div>
                 <Switch
                   checked={isMinimalHabitView}
@@ -161,7 +172,7 @@ export function CategorySettingsDialog({
                       onCompactHabitViewToggle(false); // Disable compact when minimal is enabled
                     }
                   }}
-                  aria-label="Узкий вид привычек"
+                  aria-label={t.categorySettings.minimalLabel}
                 />
               </div>
             </div>
@@ -170,25 +181,25 @@ export function CategorySettingsDialog({
 
             {/* Analytics Sections Toggles */}
             <div className="space-y-3">
-              <h4 className={SUB_HEADING_CLASS}>Отображение аналитики</h4>
+              <h4 className={SUB_HEADING_CLASS}>{t.categorySettings.analyticsTitle}</h4>
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">Показывать "Обзор статистики"</span>
+                  <span className="text-sm">{t.categorySettings.statsLabel}</span>
                 </div>
                 <Switch
                   checked={showStatsOverviewSection}
                   onCheckedChange={onShowStatsOverviewSectionToggle}
-                  aria-label='Показывать "Обзор статистики"'
+                  aria-label={t.categorySettings.statsLabel}
                 />
               </div>
               <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">Показывать "Прогресс за неделю"</span>
+                  <span className="text-sm">{t.categorySettings.weeklyLabel}</span>
                 </div>
                 <Switch
                   checked={showWeeklyProgressSection}
                   onCheckedChange={onShowWeeklyProgressSectionToggle}
-                  aria-label='Показывать "Прогресс за неделю"'
+                  aria-label={t.categorySettings.weeklyLabel}
                 />
               </div>
             </div>
@@ -196,25 +207,25 @@ export function CategorySettingsDialog({
 
           {/* Category Management */}
           <div className="space-y-4 rounded-panel border-2 border-border p-3">
-            <h3 className={PANEL_HEADING_CLASS}>Управление категориями</h3>
-            <p className="text-sm text-muted-foreground">Создавайте свои категории для привычек</p>
+            <h3 className={PANEL_HEADING_CLASS}>{t.categorySettings.manageTitle}</h3>
+            <p className="text-sm text-muted-foreground">{t.categorySettings.manageDescription}</p>
             <div className="space-y-2">
-              <Label htmlFor="newCategoryName" className={SUB_HEADING_CLASS}>Название вашей категории</Label>
+              <Label htmlFor="newCategoryName" className={SUB_HEADING_CLASS}>{t.categorySettings.newCategoryLabel}</Label>
               <Input
                 id="newCategoryName"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Например, Утренняя рутина"
+                placeholder={t.categorySettings.newCategoryPlaceholder}
               />
             </div>
             <div className="space-y-2">
-              <Label className={SUB_HEADING_CLASS}>Выберите иконку для категории</Label>
+              <Label className={SUB_HEADING_CLASS}>{t.categorySettings.chooseIconLabel}</Label>
               <Popover open={isIconPopoverOpen} onOpenChange={setIsIconPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <div className="flex items-center gap-2 flex-1">
                       <SelectedIconVisual className="h-4 w-4" />
-                      <span className="truncate">{availableIcons[selectedIconKey]?.name || "Выберите иконку"}</span>
+                      <span className="truncate">{getLocalizedIconName(selectedIconKey, language) || t.categorySettings.chooseIconPlaceholder}</span>
                     </div>
                     <ChevronDown className="h-4 w-4 opacity-50 ml-auto" />
                   </Button>
@@ -256,12 +267,12 @@ export function CategorySettingsDialog({
               </Popover>
             </div>
             <Button variant="secondary" onClick={handleAddCategory} disabled={!newCategoryName.trim() || !selectedIconKey}>
-              <Save className="mr-2 h-4 w-4" /> Сохранить категорию
+              <Save className="mr-2 h-4 w-4" /> {t.categorySettings.saveCategory}
             </Button>
 
             {userCategories.length > 0 && (
               <div className="space-y-2">
-                <h4 className={SUB_HEADING_CLASS}>Ваши категории</h4>
+                <h4 className={SUB_HEADING_CLASS}>{t.categorySettings.yourCategoriesTitle}</h4>
                 <ScrollArea className="h-[150px]">
                   <ul className="space-y-1.5">
                     {userCategories.map((category) => {
@@ -273,7 +284,7 @@ export function CategorySettingsDialog({
                               <IconComp className="h-4 w-4" />
                             </span>
                             <span className="truncate text-sm" title={category.name}>{category.name}</span>
-                            <span className="truncate text-xs text-muted-foreground" title={availableIcons[category.iconKey]?.name}>({availableIcons[category.iconKey]?.name})</span>
+                            <span className="truncate text-xs text-muted-foreground" title={getLocalizedIconName(category.iconKey, language)}>({getLocalizedIconName(category.iconKey, language)})</span>
                           </div>
                           <button
                             type="button"
@@ -296,7 +307,7 @@ export function CategorySettingsDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" onClick={onClose}>
-              Закрыть
+              {t.categorySettings.closeButton}
             </Button>
           </DialogClose>
         </DialogFooter>

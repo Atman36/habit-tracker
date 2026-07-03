@@ -7,6 +7,7 @@ import { format, subDays, eachDayOfInterval, parseISO, startOfDay } from 'date-f
 import { TrendingUp, Repeat, Award, BarChartBig, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 
 interface StatsOverviewProps {
   habits: Habit[];
@@ -26,6 +27,8 @@ interface MetricTile {
 }
 
 export function StatsOverview({ habits }: StatsOverviewProps) {
+  const t = useTranslations();
+  const { language } = useLanguage();
   const today = startOfDay(new Date());
   const last30DaysInterval = {
     start: subDays(today, 29), // 30 days including today
@@ -81,37 +84,39 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
   }, 0);
 
   const getMotivationalMessage = () => {
-    if (habits.length === 0) return "Добавьте привычки, чтобы увидеть статистику!";
-    if (averageCompletionPercentage > 75) return "Отличная работа! Вы на высоте!";
-    if (averageCompletionPercentage > 50) return "Хороший прогресс! Продолжайте в том же духе.";
-    if (averageCompletionPercentage > 25) return "Неплохое начало! Маленькие шаги ведут к большим результатам.";
-    return "Каждый день - новая возможность стать лучше!";
+    if (habits.length === 0) return t.stats.motivational.empty;
+    if (averageCompletionPercentage > 75) return t.stats.motivational.excellent;
+    if (averageCompletionPercentage > 50) return t.stats.motivational.good;
+    if (averageCompletionPercentage > 25) return t.stats.motivational.gettingThere;
+    return t.stats.motivational.keepGoing;
   };
+
+  const streakUnit = language === 'ru' ? ' дн.' : ' days';
 
   const metricTiles: MetricTile[] = [
     {
-      label: "% выполнения (30 дн.)",
+      label: t.stats.cards.completionRate,
       value: `${averageCompletionPercentage}%`,
       icon: TrendingUp,
       tileClassName: "bg-background/10 border-background/20",
       iconClassName: "text-secondary",
     },
     {
-      label: "Средняя серия",
-      value: `${averageStreak} дн.`,
+      label: t.stats.cards.averageStreak,
+      value: `${averageStreak}${streakUnit}`,
       icon: Repeat,
       tileClassName: "bg-background/10 border-background/20",
       iconClassName: "text-primary",
     },
     {
-      label: "Лучшая серия",
-      value: `${bestStreak} дн.`,
+      label: t.stats.cards.bestStreak,
+      value: `${bestStreak}${streakUnit}`,
       icon: Award,
       tileClassName: "bg-amber border-background/20 text-foreground",
       iconClassName: "text-foreground",
     },
     {
-      label: "Выполнено за месяц",
+      label: t.stats.cards.completedThisMonth,
       value: totalCompletionsLast30Days,
       icon: BarChartBig,
       tileClassName: "bg-background/10 border-background/20",
@@ -126,7 +131,7 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
           <p className="font-mono text-xs italic opacity-70">{getMotivationalMessage()}</p>
         ) : (
           <>
-            <p className="font-mono text-[10px] uppercase tracking-wider opacity-60">Сегодня</p>
+            <p className="font-mono text-[10px] uppercase tracking-wider opacity-60">{t.general.today}</p>
             <p className="mt-1 font-display font-black text-4xl">
               <span className="text-accent">{habitsCompletedToday}</span>
               <span>/{habits.length}</span>

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Lightbulb, AlertTriangle, Settings2, Sparkles } from 'lucide-react';
+import { useTranslations } from '@/components/LanguageProvider';
 
 interface PersonalizedTipsSectionProps {
   habits: Habit[];
@@ -17,6 +18,7 @@ interface PersonalizedTipsSectionProps {
 }
 
 export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSettingsDialog }: PersonalizedTipsSectionProps) {
+  const t = useTranslations();
   const [tips, setTips] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
     setTips([]);
 
     if (!openRouterSettings?.apiKey) {
-      setError("API ключ OpenRouter не настроен. Пожалуйста, добавьте его и выберите модель.");
+      setError(t.personalizedTips.missingApiKey);
       onOpenSettingsDialog();
       setIsLoading(false);
       return;
@@ -59,7 +61,7 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 font-display text-xs uppercase tracking-wide">
             <Lightbulb className="h-5 w-5 text-secondary" />
-            Персональные советы
+            {t.personalizedTips.title}
           </CardTitle>
           <span className="rounded-full border-2 border-border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-muted-foreground">
             openrouter
@@ -77,24 +79,24 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Получение советов...
+                {t.personalizedTips.fetching}
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Получить советы
+                {t.personalizedTips.fetchButton}
               </>
             )}
           </Button>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Настройки OpenRouter:</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{t.personalizedTips.settingsLabel}</span>
             {openRouterSettings?.apiKey ? (
-              <Button variant="outline" size="icon" onClick={onOpenSettingsDialog} aria-label="Настройки OpenRouter">
+              <Button variant="outline" size="icon" onClick={onOpenSettingsDialog} aria-label={t.personalizedTips.configure}>
                 <Settings2 className="h-5 w-5" />
               </Button>
             ) : (
               <Button variant="outline" size="sm" onClick={onOpenSettingsDialog}>
-                Настроить
+                {t.personalizedTips.configure}
               </Button>
             )}
           </div>
@@ -102,7 +104,7 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
 
         {habits.length === 0 && !isLoading && (
           <p className="mt-4 text-sm text-muted-foreground">
-            Добавьте хотя бы одну привычку, чтобы получить персональные советы.
+            {t.personalizedTips.noHabits}
           </p>
         )}
 
@@ -117,12 +119,12 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
         {error && (
           <Alert variant="destructive" className="mt-4">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Ошибка</AlertTitle>
+            <AlertTitle>{t.personalizedTips.errorTitle}</AlertTitle>
             <AlertDescription className="space-y-2">
               <p>{error}</p>
               <Button variant="outline" size="sm" onClick={onOpenSettingsDialog}>
                 <Settings2 className="h-4 w-4" />
-                Настроить
+                {t.personalizedTips.configure}
               </Button>
             </AlertDescription>
           </Alert>

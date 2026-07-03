@@ -68,3 +68,9 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+/* Utility: hide default Next.js starter/Vercel badge if present */
+/* This targets the common starter link that sits fixed in the bottom-left corner */
+a[href*="vercel.com"] {
+  display: none !important;
+}

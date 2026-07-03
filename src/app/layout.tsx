@@ -4,6 +4,8 @@ import { Unbounded, Rubik, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { LanguageProvider } from '@/components/LanguageProvider';
+import { translations } from '@/lib/translations';
 
 const fontDisplay = Unbounded({
   variable: '--font-display',
@@ -24,8 +26,8 @@ const fontMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Трекер Привычек',
-  description: 'Современное приложение для отслеживания привычек',
+  title: translations.en.metadata.title,
+  description: translations.en.metadata.description,
 };
 
 export default function RootLayout({
@@ -34,17 +36,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

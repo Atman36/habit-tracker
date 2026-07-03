@@ -17,7 +17,7 @@ export interface Habit {
   name: string;
   description?: string;
   icon: string; // Key of availableIcons, this will be the iconKey
-  goal: string; 
+  goal: string;
   frequency: HabitFrequency;
   type: HabitType;
   completions: HabitCompletion[];
@@ -49,38 +49,38 @@ export interface ApiError {
   code?: string;
 }
 
-// Система достижений
+// Achievement system
 export type AchievementType =
-  | 'first_week' // Первая неделя без пропусков
-  | 'month_streak' // Месяц подряд
-  | 'all_habits_day' // Все привычки в один день
-  | 'habit_creator' // Создание привычек
-  | 'consistency_master' // Постоянство
-  | 'early_bird' // Ранняя пташка
-  | 'night_owl' // Сова
-  | 'weekend_warrior' // Воин выходных
-  | 'perfectionist' // Перфекционист
-  | 'comeback_kid' // Возвращение после неудачи
-  | 'milestone' // Вехи (100, 365 дней и т.д.)
-  | 'category_master' // Мастер категории
-  | 'habit_diversity' // Разнообразие привычек
-  | 'long_term_commitment'; // Долгосрочная приверженность
+  | 'first_week' // First seven days without skipping
+  | 'month_streak' // Thirty consecutive days
+  | 'all_habits_day' // Every habit completed in a single day
+  | 'habit_creator' // Created multiple habits
+  | 'consistency_master' // Long streak keeper
+  | 'early_bird' // Early morning focus
+  | 'night_owl' // Late-night effort
+  | 'weekend_warrior' // Weekend consistency
+  | 'perfectionist' // Long streak without a miss
+  | 'comeback_kid' // Recovered after a setback
+  | 'milestone' // Major milestones (100, 365 days, etc.)
+  | 'category_master' // Mastered a category
+  | 'habit_diversity' // Keeps diverse habits
+  | 'long_term_commitment'; // Stayed active for months
 
 export interface Achievement {
   id: string;
   type: AchievementType;
   name: string;
   description: string;
-  badgeIcon: string; // Имя файла значка (например, 'first_week.svg')
+  badgeIcon: string; // Badge file name (for example, 'first_week.svg')
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
-  unlockedAt?: string; // ISO date string когда получено
-  progress?: number; // Текущий прогресс (0-100)
-  maxProgress?: number; // Максимальное значение для прогресса
-  category?: string; // Категория достижения для группировки
+  unlockedAt?: string; // ISO date string for when it was earned
+  progress?: number; // Current progress (0-100)
+  maxProgress?: number; // Target value for progress
+  category?: string; // Category grouping for the badge
 }
 
 export interface UserAchievements {
   unlockedAchievements: Achievement[];
-  totalPoints: number; // Общие очки за достижения
-  level: number; // Уровень пользователя
+  totalPoints: number; // Sum of points earned from unlocked achievements
+  level: number; // Calculated level based on total points
 }

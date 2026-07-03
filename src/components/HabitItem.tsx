@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getIconComponent, availableIcons as allAvailableIcons, defaultIconKey } from '@/components/icons';
 import { format, parseISO, startOfWeek, startOfDay, addDays, isAfter, isSameDay } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { enUS, ru } from 'date-fns/locale';
 import { Flame, Trash2, TrendingUp, CalendarDays, Check, X, Plus, Shield, AlertTriangle, RotateCcw, Hand, SkipForward, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -19,6 +19,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import { getLocalizedIconName } from '@/lib/iconLocalization';
 
 interface HabitItemProps {
   habit: Habit;
@@ -60,6 +62,8 @@ export function HabitItem({
   isCompactHabitView,
   isMinimalHabitView
 }: HabitItemProps) {
+  const t = useTranslations();
+  const { language } = useLanguage();
   const {
     attributes,
     listeners,
@@ -83,6 +87,7 @@ export function HabitItem({
 
   const IconComponent = getIconComponent(habit.icon);
   const isIconGrayscale = isFailedOnSelectedDate || isSkippedOnSelectedDate;
+  const dateLocale = language === 'ru' ? ru : enUS;
 
   const handleAction = (status: HabitStatus) => {
     onToggleComplete(habit.id, selectedDate, status);
@@ -90,7 +95,8 @@ export function HabitItem({
 
   // Category display name (also used to derive the pastel icon-tile color and the meta line).
   const uniqueSelectedValue = determineInitialIconValueForItem(habit, userCategories);
-  let habitCategoryDisplayName = allAvailableIcons[habit.icon]?.name || 'Категория';
+  let habitCategoryDisplayName = habit.icon ? getLocalizedIconName(habit.icon, language) : t.addHabit.form.categoryLabel;
+
   if (uniqueSelectedValue.startsWith('user:')) {
     const userId = uniqueSelectedValue.substring('user:'.length);
     const userCat = userCategories.find(uc => uc.id === userId);
@@ -450,7 +456,7 @@ export function HabitItem({
             <AccordionItem value="progress" className="border-b-0">
               <AccordionTrigger className="flex-none w-fit py-1.5 px-3 rounded-full border-2 border-border bg-card font-mono text-[11px] shadow-hard-xs hover:no-underline [&>svg]:h-3.5 [&>svg]:w-3.5">
                 <div className="flex items-center gap-1.5">
-                  <TrendingUp className="h-3.5 w-3.5"/> Показать прогресс
+                  <TrendingUp className="h-3.5 w-3.5"/> {t.habitItem.showProgress}
                 </div>
               </AccordionTrigger>
               <AccordionContent>
@@ -460,7 +466,7 @@ export function HabitItem({
             <AccordionItem value="history" className="border-b-0">
               <AccordionTrigger className="flex-none w-fit py-1.5 px-3 rounded-full border-2 border-border bg-card font-mono text-[11px] shadow-hard-xs hover:no-underline [&>svg]:h-3.5 [&>svg]:w-3.5">
                 <div className="flex items-center gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5"/> История отметок
+                  <CalendarDays className="h-3.5 w-3.5"/> {t.habitItem.showHistory}
                 </div>
               </AccordionTrigger>
               <AccordionContent>
@@ -470,7 +476,7 @@ export function HabitItem({
                       .sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime())
                       .map(comp => (
                       <li key={comp.date} className="text-xs flex items-center">
-                        {format(parseISO(comp.date), 'PPP', { locale: ru })}:
+                        {format(parseISO(comp.date), 'PPP', { locale: dateLocale })}:
                         {comp.status === 'completed' && (
                           <Check className={cn(
                               "h-3 w-3 ml-1.5",
@@ -485,7 +491,7 @@ export function HabitItem({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Пока нет отметок.</p>
+                  <p className="text-xs text-muted-foreground">{t.habitItem.noHistory}</p>
                 )}
               </AccordionContent>
             </AccordionItem>

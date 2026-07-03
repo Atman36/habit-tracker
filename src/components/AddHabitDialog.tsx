@@ -29,27 +29,30 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { defaultIconKey, getIconComponent, availableIcons } from '@/components/icons';
+import { defaultIconKey, getIconComponent, availableIcons, ADDITIONAL_CATEGORY_KEY } from '@/components/icons';
 import React, { useState, useMemo } from 'react';
 import { PlusCircle, Edit, Info, Dumbbell, Ban } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import type { TranslationContent } from '@/lib/translations';
+import { getLocalizedCategoryName, getLocalizedIconName } from '@/lib/iconLocalization';
 
-const formSchema = z.object({
-  name: z.string().min(1, 'Название обязательно'),
+const buildFormSchema = (t: TranslationContent['addHabit']) => z.object({
+  name: z.string().min(1, t.errors.nameRequired),
   description: z.string().optional(),
   // This will store the prefixed unique value e.g., "std:CheckCircle" or "user:uuid"
-  icon: z.string().min(1, 'Категория обязательна'),
-  goal: z.string().min(1, 'Цель обязательна'),
+  icon: z.string().min(1, t.errors.iconRequired),
+  goal: z.string().min(1, t.errors.goalRequired),
   frequency: z.enum(['daily', 'weekly', 'monthly'], {
-    required_error: "Частота обязательна",
+    required_error: t.errors.frequencyRequired,
   }),
   type: z.enum(['positive', 'negative'], {
-    required_error: "Тип привычки обязателен",
+    required_error: t.errors.typeRequired,
   }),
 });
 
-type AddHabitFormValues = z.infer<typeof formSchema>;
+type AddHabitFormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 interface AddHabitDialogProps {
   onSave: (habit: Omit<Habit, 'id' | 'completions' | 'createdAt' | 'streak'>, id?: string) => void;
@@ -61,11 +64,17 @@ interface AddHabitDialogProps {
 
 const FIELD_LABEL_CLASS = 'font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground';
 
-const FREQUENCY_OPTIONS: { value: HabitFrequency; label: string }[] = [
-  { value: 'daily', label: 'Ежедневно' },
-  { value: 'weekly', label: 'Еженедельно' },
-  { value: 'monthly', label: 'Ежемесячно' },
+const FREQUENCY_OPTIONS: { value: HabitFrequency }[] = [
+  { value: 'daily' },
+  { value: 'weekly' },
+  { value: 'monthly' },
 ];
+
+const FREQUENCY_LABEL_KEYS: Record<HabitFrequency, 'frequencyDaily' | 'frequencyWeekly' | 'frequencyMonthly'> = {
+  daily: 'frequencyDaily',
+  weekly: 'frequencyWeekly',
+  monthly: 'frequencyMonthly',
+};
 
 // This function now determines the unique value for the Select component
 const determineInitialIconValue = (
@@ -100,7 +109,10 @@ export function AddHabitDialog({
   availableIcons, // This prop can be removed if not directly used here anymore for `allAvailableIcons`
   userCategories,
 }: AddHabitDialogProps) {
+  const t = useTranslations();
+  const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const formSchema = useMemo(() => buildFormSchema(t.addHabit), [t]);
 
   const form = useForm<AddHabitFormValues>({
     resolver: zodResolver(formSchema),
@@ -196,15 +208,17 @@ export function AddHabitDialog({
           <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => setIsOpen(true)}><Edit className="h-4 w-4" /></Button>
         ) : (
           <Button onClick={() => setIsOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Добавить привычку
+            <PlusCircle className="mr-2 h-4 w-4" /> {t.addHabit.triggerLabel}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase">{existingHabit ? 'Редактировать привычку' : 'Добавить новую привычку'}</DialogTitle>
+          <DialogTitle className="font-display uppercase">{existingHabit ? t.addHabit.dialog.editTitle : t.addHabit.dialog.addTitle}</DialogTitle>
           <DialogDescription>
-            {existingHabit ? 'Обновите детали вашей привычки.' : 'Заполните информацию о новой привычке, которую хотите отслеживать.'}
+            {existingHabit ? t.addHabit.dialog.editDescription : t.addHabit.dialog.addDescription}
+            <br />
+            <span className="text-xs text-muted-foreground">{t.addHabit.instructionsHint}</span>
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -214,9 +228,9 @@ export function AddHabitDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className={FIELD_LABEL_CLASS}>Название</FormLabel>
+                  <FormLabel className={FIELD_LABEL_CLASS}>{t.addHabit.form.nameLabel}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Например, Читать 30 минут" {...field} />
+                    <Input placeholder={t.addHabit.form.namePlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -227,9 +241,9 @@ export function AddHabitDialog({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className={FIELD_LABEL_CLASS}>Описание (необязательно)</FormLabel>
+                  <FormLabel className={FIELD_LABEL_CLASS}>{t.addHabit.form.descriptionLabel}</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Любые детали или заметки" {...field} />
+                    <Textarea placeholder={t.addHabit.form.descriptionPlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -241,7 +255,7 @@ export function AddHabitDialog({
               name="icon"
               render={({ field }) => {
                 let displayIconKey = defaultIconKey;
-                let displayNameInTrigger = "Выберите категорию"; // Default placeholder
+                let displayNameInTrigger = t.addHabit.form.categoryPlaceholder;
                 const currentFieldValue = field.value || `std:${defaultIconKey}`; // Ensure there's always a value
 
                 if (currentFieldValue) {
@@ -252,15 +266,15 @@ export function AddHabitDialog({
                       displayIconKey = userCat.iconKey;
                       displayNameInTrigger = userCat.name;
                     } else if (availableIcons[defaultIconKey]) { // Fallback if userCat not found
-                        displayNameInTrigger = availableIcons[defaultIconKey].name;
+                        displayNameInTrigger = getLocalizedIconName(defaultIconKey, language);
                     }
                   } else if (currentFieldValue.startsWith('std:')) {
                     const iconKey = currentFieldValue.substring('std:'.length);
                     if (availableIcons[iconKey]) {
                       displayIconKey = iconKey;
-                      displayNameInTrigger = availableIcons[iconKey].name;
+                      displayNameInTrigger = getLocalizedIconName(iconKey, language);
                     } else if (availableIcons[defaultIconKey]) { // Fallback if iconKey not found
-                        displayNameInTrigger = availableIcons[defaultIconKey].name;
+                        displayNameInTrigger = getLocalizedIconName(defaultIconKey, language);
                     }
                   }
                 }
@@ -268,11 +282,11 @@ export function AddHabitDialog({
 
                 return (
                   <FormItem>
-                    <FormLabel className={FIELD_LABEL_CLASS}>Категория</FormLabel>
+                    <FormLabel className={FIELD_LABEL_CLASS}>{t.addHabit.form.categoryLabel}</FormLabel>
                     <Select onValueChange={field.onChange} value={currentFieldValue}>
                       <FormControl>
                         <SelectTrigger>
-                           <SelectValue placeholder="Выберите категорию">
+                           <SelectValue placeholder={t.addHabit.form.categoryPlaceholder}>
                             <div className="flex items-center gap-2">
                                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 border-border bg-muted">
                                   <SelectedIconComponent className="h-4 w-4" />
@@ -286,7 +300,7 @@ export function AddHabitDialog({
                         <ScrollArea className="h-[300px]">
                           {userCategories.length > 0 && (
                             <SelectGroup>
-                              <SelectLabel>Ваши категории</SelectLabel>
+                              <SelectLabel>{t.addHabit.form.userCategoryLabel}</SelectLabel>
                               {userCategories.map((uc) => {
                                 const IconComp = getIconComponent(uc.iconKey);
                                 const uniqueValue = `user:${uc.id}`;
@@ -299,7 +313,7 @@ export function AddHabitDialog({
                                   >
                                     <div className="flex items-center gap-2">
                                       <IconComp className="h-4 w-4" />
-                                      <span>{uc.name} <span className="text-xs text-muted-foreground">({availableIcons[uc.iconKey]?.name})</span></span>
+                                      <span>{uc.name} <span className="text-xs text-muted-foreground">({getLocalizedIconName(uc.iconKey, language)})</span></span>
                                     </div>
                                   </SelectItem>
                                 );
@@ -308,12 +322,12 @@ export function AddHabitDialog({
                           )}
 
                           {Object.entries(groupedStandardIcons).map(([categoryName, iconsInCategory]) => {
-                            if (categoryName === 'Дополнительные') { // Filter out "Дополнительные"
+                            if (categoryName === ADDITIONAL_CATEGORY_KEY) { // Filter out "Дополнительные"
                                 return null;
                             }
                             return (
                                 <SelectGroup key={categoryName}>
-                                <SelectLabel className="text-xs font-semibold pl-2 pt-2">{categoryName}</SelectLabel>
+                                <SelectLabel className="text-xs font-semibold pl-2 pt-2">{getLocalizedCategoryName(categoryName, language)}</SelectLabel>
                                 {iconsInCategory.map((iconOption) => {
                                     // Avoid duplicating standard icons if a user category uses the same name AND iconKey
                                     if (userCategories.some(uc => uc.iconKey === iconOption.key && uc.name === iconOption.name)) {
@@ -325,12 +339,12 @@ export function AddHabitDialog({
                                     <SelectItem
                                       key={uniqueValue}
                                       value={uniqueValue}
-                                      title={iconOption.name}
+                                      title={getLocalizedIconName(iconOption.key, language)}
                                       className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-muted"
                                     >
                                         <div className="flex items-center gap-2">
                                         <IconComp className="h-4 w-4" />
-                                        <span>{iconOption.name}</span>
+                                        <span>{getLocalizedIconName(iconOption.key, language)}</span>
                                         </div>
                                     </SelectItem>
                                     );
@@ -350,8 +364,7 @@ export function AddHabitDialog({
             <div className="flex gap-2 rounded-panel border-2 border-border bg-amber/20 p-3 text-xs">
               <Info className="h-4 w-4 shrink-0" />
               <p>
-                <strong>Цель:</strong> Конкретизируйте, что считается успешным выполнением привычки (например, 'Прочитать 1 главу', 'Сделать 20 отжиманий', 'Не есть сладкое после 18:00').
-                Это поможет вам четко понимать, когда привычка выполнена. Не дублируйте здесь название или частоту.
+                <strong>{t.addHabit.dialog.goalHeading}</strong> {t.addHabit.dialog.goalHint}
               </p>
             </div>
             <FormField
@@ -359,9 +372,9 @@ export function AddHabitDialog({
               name="goal"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className={FIELD_LABEL_CLASS}>Цель</FormLabel>
+                  <FormLabel className={FIELD_LABEL_CLASS}>{t.addHabit.form.goalLabel}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Например, Прочитать 1 главу книги" {...field} />
+                    <Input placeholder={t.addHabit.form.goalPlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -372,7 +385,7 @@ export function AddHabitDialog({
               name="frequency"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className={FIELD_LABEL_CLASS}>Частота</FormLabel>
+                  <FormLabel className={FIELD_LABEL_CLASS}>{t.addHabit.form.frequencyLabel}</FormLabel>
                   <FormControl>
                     <div className="flex flex-wrap gap-2">
                       {FREQUENCY_OPTIONS.map((option) => (
@@ -387,7 +400,7 @@ export function AddHabitDialog({
                               : "bg-card text-foreground"
                           )}
                         >
-                          {option.label}
+                          {t.addHabit.form[FREQUENCY_LABEL_KEYS[option.value]]}
                         </button>
                       ))}
                     </div>
@@ -401,7 +414,7 @@ export function AddHabitDialog({
               name="type"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel className={FIELD_LABEL_CLASS}>Тип привычки</FormLabel>
+                  <FormLabel className={FIELD_LABEL_CLASS}>{t.addHabit.form.typeLabel}</FormLabel>
                   <FormControl>
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -413,7 +426,7 @@ export function AddHabitDialog({
                         )}
                       >
                         <Dumbbell className="h-5 w-5" />
-                        Позитивная (сделать)
+                        {t.addHabit.form.typePositive}
                       </button>
                       <button
                         type="button"
@@ -424,7 +437,7 @@ export function AddHabitDialog({
                         )}
                       >
                         <Ban className="h-5 w-5" />
-                        Негативная (избежать)
+                        {t.addHabit.form.typeNegative}
                       </button>
                     </div>
                   </FormControl>
@@ -434,9 +447,9 @@ export function AddHabitDialog({
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="outline" onClick={() => { setIsOpen(false); }}>Отмена</Button>
+                <Button type="button" variant="outline" onClick={() => { setIsOpen(false); }}>{t.addHabit.form.cancel}</Button>
               </DialogClose>
-              <Button type="submit" className="uppercase font-bold">{existingHabit ? 'Сохранить изменения' : 'Добавить привычку'}</Button>
+              <Button type="submit" className="uppercase font-bold">{existingHabit ? t.addHabit.form.submitSave : t.addHabit.form.submitAdd}</Button>
             </DialogFooter>
           </form>
         </Form>

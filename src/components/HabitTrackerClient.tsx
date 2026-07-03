@@ -13,7 +13,7 @@ import { updateUserAchievements, getAllAchievementsWithProgress, calculateUserLe
 import { Button } from '@/components/ui/button';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { format, parseISO, isValid, subDays, isSameDay, startOfDay, addDays, isToday, isYesterday, startOfWeek, endOfWeek, eachDayOfInterval, isAfter } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { enUS, ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import {
   DndContext,
@@ -41,6 +41,10 @@ import {
 } from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
 import { availableIcons, defaultIconKey } from '@/components/icons';
+import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import type { Language } from '@/lib/translations';
+import { defaultLanguage } from '@/lib/translations';
+import { getLocalizedCategoryName, getGoalFallbackForCategory, getGenericGoalFallback } from '@/lib/iconLocalization';
 
 const EMPTY_USER_ACHIEVEMENTS: UserAchievements = {
   unlockedAchievements: [],
@@ -53,7 +57,7 @@ interface ParsedImportData {
   userCategories: UserDefinedCategory[];
 }
 
-const parseHabitMarkdown = (markdown: string): ParsedImportData => {
+const parseHabitMarkdown = (markdown: string, language: Language = defaultLanguage): ParsedImportData => {
   const habits: Omit<Habit, 'id' | 'streak'>[] = [];
   const userCategories: UserDefinedCategory[] = [];
   
@@ -78,13 +82,14 @@ const parseHabitMarkdown = (markdown: string): ParsedImportData => {
     if (currentSection === 'habits') {
       // Handle both old format and new category-based format
       let habitBlocks: string[];
-      
+
       // Check if the content has category sections
-      if (trimmedContent.includes('## Категория:')) {
-        // New format with categories
-        const categoryBlocks = trimmedContent.split(/^## Категория:/m).filter(block => block.trim().length > 0);
+      if (/## (Категория|Category):/.test(trimmedContent)) {
+        // Normalize English headers to reuse the same parser
+        const normalizedContent = trimmedContent.replace(/^## Category:/gm, '## Категория:');
+        const categoryBlocks = normalizedContent.split(/^## Категория:/m).filter(block => block.trim().length > 0);
         habitBlocks = [];
-        
+
         // Extract habit blocks from each category
         categoryBlocks.forEach(categoryBlock => {
           const habitBlocksInCategory = categoryBlock.split(/^---$/m)
@@ -119,39 +124,15 @@ const parseHabitMarkdown = (markdown: string): ParsedImportData => {
             habit.icon = iconKey || defaultIconKey; 
           } else if (line.startsWith('- Goal: ')) {
             habit.goal = line.substring('- Goal: '.length).trim();
-            
+
             // Generate specific goals if the goal is too generic
             if (habit.goal === 'цель' || habit.goal.toLowerCase() === 'goal' || !habit.goal) {
               // Generate a more specific goal based on the habit name and icon
               const iconKey = habit.icon || defaultIconKey;
               const iconInfo = availableIcons[iconKey];
               const habitCategory = iconInfo?.category || 'Общее';
-              
-              if (habitCategory === 'Здоровье и Фитнес') {
-                habit.goal = 'Улучшить физическое здоровье и активность';
-              } else if (habitCategory === 'Благополучие и Осознанность') {
-                habit.goal = 'Достичь внутренней гармонии и спокойствия';
-              } else if (habitCategory === 'Питание и Напитки') {
-                habit.goal = 'Поддерживать здоровое питание';
-              } else if (habitCategory === 'Развитие') {
-                habit.goal = 'Постоянное личностное и профессиональное развитие';
-              } else if (habitCategory === 'Продуктивность') {
-                habit.goal = 'Повысить эффективность и результативность';
-              } else if (habitCategory === 'Работа') {
-                habit.goal = 'Достичь профессиональных успехов';
-              } else if (habitCategory === 'Финансы') {
-                habit.goal = 'Улучшить финансовое благополучие';
-              } else if (habitCategory === 'Режим дня') {
-                habit.goal = 'Оптимизировать распорядок дня';
-              } else if (habitCategory === 'Хобби и Отдых') {
-                habit.goal = 'Получать удовольствие от увлечений';
-              } else if (habitCategory === 'Дом и Быт') {
-                habit.goal = 'Поддерживать порядок и комфорт';
-              } else if (habitCategory === 'Ограничения / Негативные привычки') {
-                habit.goal = 'Избавиться от негативного влияния';
-              } else {
-                habit.goal = 'Регулярно выполнять и отслеживать прогресс';
-              }
+              const categoryFallback = getGoalFallbackForCategory(habitCategory, language);
+              habit.goal = categoryFallback ?? getGenericGoalFallback(language);
             }
           } else if (line.startsWith('- Frequency: ')) {
             habit.frequency = line.substring('- Frequency: '.length).trim() as Habit['frequency'];
@@ -189,10 +170,10 @@ const parseHabitMarkdown = (markdown: string): ParsedImportData => {
         });
 
         if (habit.name && habit.frequency) {
-          if (!habit.icon) habit.icon = defaultIconKey; 
+          if (!habit.icon) habit.icon = defaultIconKey;
           if (!habit.createdAt) habit.createdAt = new Date().toISOString();
           if (!habit.type) habit.type = 'positive';
-          if (!habit.goal) habit.goal = 'Регулярно выполнять и отслеживать прогресс';
+          if (!habit.goal) habit.goal = getGenericGoalFallback(language);
           habits.push(habit as Omit<Habit, 'id' | 'streak'>);
         } else {
           console.warn("Skipping habit due to missing name or frequency:", habit);
@@ -221,13 +202,17 @@ const parseHabitMarkdown = (markdown: string): ParsedImportData => {
   return { habits, userCategories };
 };
 
-const formatHabitToMarkdown = (habits: Habit[], userCategories: UserDefinedCategory[]): string => {
+const formatHabitToMarkdown = (
+  habits: Habit[],
+  userCategories: UserDefinedCategory[],
+  language: Language = defaultLanguage
+): string => {
   let markdown = "# Habits Export\n\n";
-  
+
   // Group habits by category
   const habitsByCategory: Record<string, Habit[]> = {};
-  const unknownCategoryKey = 'Без категории';
-  
+  const unknownCategoryKey = language === 'ru' ? 'Без категории' : 'No category';
+
   // First pass - organize habits by their icon category
   habits.forEach(habit => {
     const iconKey = habit.icon || defaultIconKey;
@@ -249,8 +234,12 @@ const formatHabitToMarkdown = (habits: Habit[], userCategories: UserDefinedCateg
   
   // Second pass - output habits grouped by category
   Object.keys(habitsByCategory).sort().forEach(categoryName => {
-    markdown += `## Категория: ${categoryName}\n\n`;
-    
+    const headingLabel = language === 'ru' ? 'Категория' : 'Category';
+    const displayName = categoryName === unknownCategoryKey
+      ? unknownCategoryKey
+      : getLocalizedCategoryName(categoryName, language);
+    markdown += `## ${headingLabel}: ${displayName}\n\n`;
+
     habitsByCategory[categoryName].forEach(habit => {
       markdown += `---\n`;
       markdown += `### ${habit.name}\n`;
@@ -367,6 +356,9 @@ export function HabitTrackerClient() {
   const [habits, setHabits] = useLocalStorage<Habit[]>('habits', []);
   const [userCategories, setUserCategories] = useLocalStorage<UserDefinedCategory[]>('userCategories', []);
   const { toast } = useToast();
+  const t = useTranslations();
+  const { language } = useLanguage();
+  const dateLocale = language === 'ru' ? ru : enUS;
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -393,69 +385,11 @@ export function HabitTrackerClient() {
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   const [isCategorySettingsDialogOpen, setIsCategorySettingsDialogOpen] = useState(false);
   
-  // State for categories
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const [categorizedHabits, setCategorizedHabits] = useState<{
-    habitsByCategory: Record<string, Habit[]>;
-    sortedCategories: string[];
-  }>({ habitsByCategory: {}, sortedCategories: [] });
-  
-  // State for view mode toggle
-
   // State for compact habit view and analytics sections visibility
   const [isCompactHabitView, setIsCompactHabitView] = useLocalStorage<boolean>('compact_habit_view', false);
   const [isMinimalHabitView, setIsMinimalHabitView] = useLocalStorage<boolean>('minimal_habit_view', false);
   const [showStatsOverviewSection, setShowStatsOverviewSection] = useLocalStorage<boolean>('show_stats_overview_section', true);
   const [showWeeklyProgressSection, setShowWeeklyProgressSection] = useLocalStorage<boolean>('show_weekly_progress_section', true);
-  
-  // Create habit categories whenever habits change
-  useEffect(() => {
-    const habitsByCategory: Record<string, Habit[]> = {};
-    const unknownCategoryKey = 'Без категории';
-    
-    // First pass - organize habits by their icon category
-    habits.forEach(habit => {
-      const iconKey = habit.icon || defaultIconKey;
-      const iconInfo = availableIcons[iconKey];
-      
-      if (iconInfo) {
-        const categoryName = iconInfo.category;
-        if (!habitsByCategory[categoryName]) {
-          habitsByCategory[categoryName] = [];
-        }
-        habitsByCategory[categoryName].push(habit);
-      } else {
-        if (!habitsByCategory[unknownCategoryKey]) {
-          habitsByCategory[unknownCategoryKey] = [];
-        }
-        habitsByCategory[unknownCategoryKey].push(habit);
-      }
-    });
-    
-    // Sort categories alphabetically but keep 'Без категории' at the end if it exists
-    const sortedCategories = Object.keys(habitsByCategory).sort((a, b) => {
-      if (a === unknownCategoryKey) return 1;
-      if (b === unknownCategoryKey) return -1;
-      return a.localeCompare(b);
-    });
-    
-    setCategorizedHabits({ habitsByCategory, sortedCategories });
-    
-    // Initialize expandedCategories for new categories
-    const newExpandedState = {...expandedCategories};
-    let hasChanges = false;
-    
-    sortedCategories.forEach(category => {
-      if (expandedCategories[category] === undefined) {
-        newExpandedState[category] = true; // Default to expanded
-        hasChanges = true;
-      }
-    });
-    
-    if (hasChanges) {
-      setExpandedCategories(newExpandedState);
-    }
-  }, [habits, availableIcons]);
   
   const [openRouterSettings, setOpenRouterSettings] = useLocalStorage<OpenRouterSettings | null>('openrouter_settings', null);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -476,7 +410,7 @@ export function HabitTrackerClient() {
       streak: 0, 
     };
     setHabits(prev => recalculateAllStreaks([...prev, newHabit]));
-    toast({ title: 'Привычка добавлена', description: `"${newHabit.name}" успешно добавлена.` });
+    toast({ title: t.toasts.habitAddedTitle, description: t.toasts.habitAddedDescription(newHabit.name) });
   };
 
   const editHabit = (updatedHabitData: Omit<Habit, 'id' | 'completions' | 'createdAt' | 'streak'>, id: string) => {
@@ -495,14 +429,14 @@ export function HabitTrackerClient() {
         return h;
       }))
     );
-    toast({ title: 'Привычка обновлена', description: `"${updatedHabitData.name}" успешно обновлена.` });
+    toast({ title: t.toasts.habitUpdatedTitle, description: t.toasts.habitUpdatedDescription(updatedHabitData.name) });
   };
 
   const deleteHabit = (id: string) => {
     const habitToDelete = habits.find(h => h.id === id);
     setHabits(prev => recalculateAllStreaks(prev.filter(h => h.id !== id)));
     if (habitToDelete) {
-      toast({ title: 'Привычка удалена', description: `"${habitToDelete.name}" удалена.`, variant: 'destructive' });
+      toast({ title: t.toasts.habitDeletedTitle, description: t.toasts.habitDeletedDescription(habitToDelete.name), variant: 'destructive' });
     }
   };
 
@@ -535,7 +469,7 @@ export function HabitTrackerClient() {
 
   const addUserCategoryHandler = (name: string, iconKey: string) => {
     if (!availableIcons[iconKey]) {
-      toast({ title: 'Ошибка', description: 'Выбрана неверная иконка.', variant: 'destructive' });
+      toast({ title: t.toasts.invalidIconTitle, description: t.toasts.invalidIconDescription, variant: 'destructive' });
       return;
     }
     const newUserCategory: UserDefinedCategory = {
@@ -544,14 +478,14 @@ export function HabitTrackerClient() {
       iconKey,
     };
     setUserCategories(prev => [...prev, newUserCategory]);
-    toast({ title: 'Категория добавлена', description: `Категория "${name}" успешно добавлена.`});
+    toast({ title: t.toasts.categoryAddedTitle, description: t.toasts.categoryAddedDescription(name)});
   };
   
   const deleteUserCategoryHandler = (id: string) => {
     const categoryToDelete = userCategories.find(c => c.id === id);
     setUserCategories(prev => prev.filter(c => c.id !== id));
     if (categoryToDelete) {
-      toast({ title: 'Категория удалена', description: `Категория "${categoryToDelete.name}" удалена.`, variant: 'destructive' });
+      toast({ title: t.toasts.categoryDeletedTitle, description: t.toasts.categoryDeletedDescription(categoryToDelete.name), variant: 'destructive' });
     }
   };
 
@@ -576,7 +510,7 @@ export function HabitTrackerClient() {
 
   const handleExportHabits = () => {
     if (habits.length === 0 && userCategories.length === 0) {
-      toast({ title: 'Нет данных для экспорта', description: 'Добавьте привычки или категории, чтобы экспортировать их.', variant: 'default' });
+      toast({ title: t.toasts.exportEmptyTitle, description: t.toasts.exportEmptyDescription, variant: 'default' });
       return;
     }
     const habitsToExport = habits.map(h => ({
@@ -585,7 +519,7 @@ export function HabitTrackerClient() {
         icon: h.icon || defaultIconKey,
         createdAt: h.createdAt || new Date().toISOString() 
     }));
-    const markdownContent = formatHabitToMarkdown(habitsToExport, userCategories);
+    const markdownContent = formatHabitToMarkdown(habitsToExport, userCategories, language);
     const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -596,7 +530,7 @@ export function HabitTrackerClient() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast({ title: 'Данные экспортированы', description: 'Файл habits-export.md был успешно скачан.' });
+    toast({ title: t.toasts.exportSuccessTitle, description: t.toasts.exportSuccessDescription });
   };
 
   const handleImportHabits = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -606,7 +540,7 @@ export function HabitTrackerClient() {
       reader.onload = (e) => {
         try {
           const markdownContent = e.target?.result as string;
-          const { habits: importedHabitData, userCategories: importedUserCategories } = parseHabitMarkdown(markdownContent);
+          const { habits: importedHabitData, userCategories: importedUserCategories } = parseHabitMarkdown(markdownContent, language);
 
           const newHabitsWithIdsAndStreak = importedHabitData.map(hData => ({
             ...hData,
@@ -633,10 +567,10 @@ export function HabitTrackerClient() {
               return [...prevUserCategories, ...newUniqueCategories];
             });
           }
-          toast({ title: 'Данные импортированы', description: `${newHabitsWithIdsAndStreak.length} привычек успешно импортировано.` });
+          toast({ title: t.toasts.importSuccessTitle, description: t.toasts.importSuccessDescription(newHabitsWithIdsAndStreak.length) });
         } catch (error) {
           console.error("Error importing data:", error);
-          toast({ title: 'Ошибка импорта', description: 'Не удалось обработать файл. Убедитесь, что формат корректен.', variant: 'destructive' });
+          toast({ title: t.toasts.importErrorTitle, description: t.toasts.importErrorDescription, variant: 'destructive' });
         } finally {
             if (fileInputRef.current) {
                 fileInputRef.current.value = ""; 
@@ -650,7 +584,7 @@ export function HabitTrackerClient() {
   const handleSaveApiSettings = (settings: OpenRouterSettings) => {
     setOpenRouterSettings(settings);
     setIsApiKeyDialogOpen(false);
-    toast({ title: 'Настройки AI сохранены', description: 'Теперь вы можете получать персональные советы с выбранными параметрами.' });
+    toast({ title: t.toasts.aiSettingsSavedTitle, description: t.toasts.aiSettingsSavedDescription });
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -700,10 +634,10 @@ export function HabitTrackerClient() {
   }, [userAchievements]);
 
   if (!mounted) {
-     return (
+    return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
         <ListChecks className="h-16 w-16 animate-pulse text-primary" />
-        <p className="text-muted-foreground mt-4">Загрузка привычек...</p>
+        <p className="text-muted-foreground mt-4">{t.general.loadingHabits}</p>
       </div>
     );
   }
@@ -732,7 +666,7 @@ export function HabitTrackerClient() {
       <header className="mb-6">
         <div className="flex flex-wrap items-center gap-3">
           <div className="shrink-0 -rotate-2 rounded-panel border-2 border-border bg-[#F7F1E5] px-4 py-2 font-display text-lg font-black uppercase text-[#23203A] shadow-hard-xs">
-            ПРИВЫЧКА!
+            {t.general.appName}
           </div>
 
           <div className="shrink-0 rounded-full border-2 border-border bg-secondary px-3 py-1.5 font-display text-xs text-secondary-foreground shadow-hard-xs">
@@ -758,16 +692,16 @@ export function HabitTrackerClient() {
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <div className="hidden items-center gap-2 lg:flex">
-              <Button onClick={handleExportHabits} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label="Экспорт в Markdown">
+              <Button onClick={handleExportHabits} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label={t.header.exportAria}>
                 <Download className="h-4 w-4" />
               </Button>
-              <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label="Импорт из Markdown">
+              <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label={t.header.importAria}>
                 <Upload className="h-4 w-4" />
               </Button>
               <ThemeSwitcher />
             </div>
             <input type="file" ref={fileInputRef} onChange={handleImportHabits} accept=".md,text/markdown" className="hidden" />
-            <Button onClick={() => setIsCategorySettingsDialogOpen(true)} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label="Настройки категорий">
+            <Button onClick={() => setIsCategorySettingsDialogOpen(true)} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label={t.header.categorySettingsAria}>
               <Settings className="h-4 w-4" />
             </Button>
             <AddHabitDialog
@@ -777,7 +711,7 @@ export function HabitTrackerClient() {
               triggerButton={
                 <Button className="gap-2 font-bold uppercase">
                   <Plus className="h-4 w-4" />
-                  <span className="hidden lg:inline">Добавить привычку</span>
+                  <span className="hidden lg:inline">{t.addHabit.triggerLabel}</span>
                 </Button>
               }
             />
@@ -787,7 +721,7 @@ export function HabitTrackerClient() {
 
       <div className="mb-6 rounded-card border-2 border-border bg-card p-3 shadow-hard">
         <div className="flex items-center gap-2">
-          <Button onClick={goToPreviousDay} variant="outline" size="icon" aria-label="Предыдущий день" className="h-11 w-11 shrink-0">
+          <Button onClick={goToPreviousDay} variant="outline" size="icon" aria-label={t.dateNavigator.previousDayAria} className="h-11 w-11 shrink-0">
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
@@ -812,14 +746,14 @@ export function HabitTrackerClient() {
                     !isSelected && !isFutureDay && ratio === 0 && "bg-card"
                   )}
                 >
-                  <span className="text-[9px] uppercase leading-none">{format(day, 'EEEEE', { locale: ru })}</span>
+                  <span className="text-[9px] uppercase leading-none">{format(day, 'EEEEE', { locale: dateLocale })}</span>
                   <span className="text-xs font-bold leading-none lg:text-sm">{format(day, 'd')}</span>
                 </button>
               );
             })}
           </div>
 
-          <Button onClick={goToNextDay} variant="outline" size="icon" aria-label="Следующий день" disabled={isToday(selectedDate)} className="h-11 w-11 shrink-0">
+          <Button onClick={goToNextDay} variant="outline" size="icon" aria-label={t.dateNavigator.nextDayAria} disabled={isToday(selectedDate)} className="h-11 w-11 shrink-0">
             <ChevronRight className="h-4 w-4" />
           </Button>
 
@@ -830,7 +764,7 @@ export function HabitTrackerClient() {
                 className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 font-mono text-xs"
               >
                 <CalendarDays className="h-4 w-4" />
-                <span className="hidden sm:inline">{format(selectedDate, "d MMM", { locale: ru })}</span>
+                <span className="hidden sm:inline">{format(selectedDate, "d MMM", { locale: dateLocale })}</span>
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
@@ -839,7 +773,7 @@ export function HabitTrackerClient() {
                 selected={selectedDate}
                 onSelect={handleDateSelect}
                 initialFocus
-                locale={ru}
+                locale={dateLocale}
                 disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
               />
             </PopoverContent>
@@ -856,7 +790,7 @@ export function HabitTrackerClient() {
               isToday(selectedDate) ? "bg-foreground text-background" : "bg-card"
             )}
           >
-            Сегодня
+            {t.general.today}
           </button>
           <button
             type="button"
@@ -867,7 +801,7 @@ export function HabitTrackerClient() {
               isYesterday(selectedDate) ? "bg-foreground text-background" : "bg-card"
             )}
           >
-            Вчера
+            {t.general.yesterday}
           </button>
           <button
             type="button"
@@ -878,10 +812,10 @@ export function HabitTrackerClient() {
               isSameDay(selectedDate, subDays(new Date(), 2)) ? "bg-foreground text-background" : "bg-card"
             )}
           >
-            Позавчера
+            {t.general.dayBeforeYesterday}
           </button>
           <span className="ml-auto font-mono text-xs text-muted-foreground">
-            {format(selectedDate, "PPP", { locale: ru })}
+            {format(selectedDate, "PPP", { locale: dateLocale })}
           </span>
         </div>
       </div>
@@ -902,8 +836,8 @@ export function HabitTrackerClient() {
                 <div className="mx-auto h-2 w-4/5 rounded-full border-2 border-dashed border-border" />
                 <div className="mx-auto h-2 w-3/5 rounded-full border-2 border-dashed border-border" />
               </div>
-              <h2 className="mb-2 font-display text-xl font-black">Пока нет привычек</h2>
-              <p className="mb-6 text-muted-foreground">Начните отслеживать свои привычки, чтобы достигать целей!</p>
+              <h2 className="mb-2 font-display text-xl font-black">{t.emptyState.title}</h2>
+              <p className="mb-6 text-muted-foreground">{t.emptyState.description}</p>
               <AddHabitDialog
                 onSave={addHabit}
                 availableIcons={availableIcons}
@@ -911,7 +845,7 @@ export function HabitTrackerClient() {
                 triggerButton={
                   <Button className="gap-2 font-bold uppercase">
                     <Plus className="h-4 w-4" />
-                    Добавить первую привычку
+                    {t.emptyState.action}
                   </Button>
                 }
               />
