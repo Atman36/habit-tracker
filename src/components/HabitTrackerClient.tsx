@@ -1,16 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Habit, HabitCompletion, OpenRouterSettings, HabitType, HabitStatus, UserDefinedCategory } from '@/lib/types';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { Habit, HabitCompletion, OpenRouterSettings, HabitType, HabitStatus, UserDefinedCategory, UserAchievements } from '@/lib/types';
 import useLocalStorage from '@/lib/localStorage';
 import { AddHabitDialog } from './AddHabitDialog';
 import { HabitItem } from './HabitItem';
 import { PersonalizedTipsSection } from './PersonalizedTipsSection';
 import { StatsOverview } from './StatsOverview';
-import { WeeklyProgress } from './WeeklyProgress'; 
+import { WeeklyProgress } from './WeeklyProgress';
+import { AchievementsShelf } from './AchievementsShelf';
+import { updateUserAchievements, getAllAchievementsWithProgress, calculateUserLevel } from '@/lib/achievements';
 import { Button } from '@/components/ui/button';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { format, parseISO, isValid, subDays, isSameDay, startOfDay, addDays, isToday, isYesterday, startOfWeek, endOfWeek, isAfter } from 'date-fns';
+import { format, parseISO, isValid, subDays, isSameDay, startOfDay, addDays, isToday, isYesterday, startOfWeek, endOfWeek, eachDayOfInterval, isAfter } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -28,7 +30,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, FileQuestion, ListChecks, Download, Upload, Settings } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, FolderOpen, ListChecks, Download, Upload, Settings, Plus, Flame } from 'lucide-react';
 import { ApiKeyDialog } from './ApiKeyDialog';
 import { CategorySettingsDialog } from './CategorySettingsDialog';
 import { Calendar } from "@/components/ui/calendar";
@@ -39,6 +41,12 @@ import {
 } from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
 import { availableIcons, defaultIconKey, getIconComponent } from '@/components/icons';
+
+const EMPTY_USER_ACHIEVEMENTS: UserAchievements = {
+  unlockedAchievements: [],
+  totalPoints: 0,
+  level: 1,
+};
 
 interface ParsedImportData {
   habits: Omit<Habit, 'id' | 'streak'>[];
@@ -682,149 +690,280 @@ export function HabitTrackerClient() {
 
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
 
+  // Достижения/уровень: производные данные из habits (см. lib/achievements.ts).
+  // Не персистентны — пересчитываются от пустой базы при каждом изменении habits.
+  const userAchievements = useMemo(
+    () => updateUserAchievements(habits, EMPTY_USER_ACHIEVEMENTS),
+    [habits]
+  );
+  const achievementsWithProgress = useMemo(
+    () => getAllAchievementsWithProgress(habits, userAchievements),
+    [habits, userAchievements]
+  );
+  const nextLevelThreshold = useMemo(() => {
+    let points = userAchievements.totalPoints;
+    const safetyLimit = points + 10000;
+    while (calculateUserLevel(points) <= userAchievements.level && points < safetyLimit) {
+      points++;
+    }
+    return points;
+  }, [userAchievements]);
+  const xpPercent = Math.min(100, Math.round((userAchievements.totalPoints / nextLevelThreshold) * 100));
+  const bestStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak)) : 0;
+
+  const today = startOfDay(new Date());
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  const getDayCompletionRatio = (day: Date): number => {
+    if (habits.length === 0) return 0;
+    const dayString = format(day, 'yyyy-MM-dd');
+    const completedCount = habits.filter(h =>
+      h.completions.some(c => c.date === dayString && c.status === 'completed')
+    ).length;
+    return completedCount / habits.length;
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <header className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-4xl font-bold text-primary">Трекер Привычек</h1>
-        <div className="flex items-center gap-2">
-          <Button onClick={handleExportHabits} variant="outline" size="icon" aria-label="Экспорт в Markdown">
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="icon" aria-label="Импорт из Markdown">
-            <Upload className="h-4 w-4" />
-          </Button>
-          <input type="file" ref={fileInputRef} onChange={handleImportHabits} accept=".md,text/markdown" className="hidden" />
-          <Button onClick={() => setIsCategorySettingsDialogOpen(true)} variant="outline" size="icon" aria-label="Настройки категорий">
-            <Settings className="h-4 w-4" />
-          </Button>
-          <AddHabitDialog
-            onSave={addHabit}
-            availableIcons={availableIcons}
-            userCategories={userCategories}
-          />
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <header className="mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="shrink-0 -rotate-2 rounded-panel border-2 border-border bg-[#F7F1E5] px-4 py-2 font-display text-lg font-black uppercase text-[#23203A] shadow-hard-xs">
+            ПРИВЫЧКА!
+          </div>
+
+          <div className="shrink-0 rounded-full border-2 border-border bg-secondary px-3 py-1.5 font-display text-xs text-secondary-foreground shadow-hard-xs">
+            УР. {userAchievements.level}
+          </div>
+
+          <div className="hidden shrink-0 items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 py-1.5 font-mono text-xs lg:flex">
+            <Flame className="h-3.5 w-3.5 text-primary" />
+            {bestStreak}
+          </div>
+
+          <div className="order-last w-full lg:order-none lg:w-auto lg:flex-1">
+            <div className="h-4 w-full overflow-hidden rounded-full border-2 border-border bg-card">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${xpPercent}%`, background: 'linear-gradient(90deg,#FF6B4A,#7C5CFF)' }}
+              />
+            </div>
+            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+              {userAchievements.totalPoints} / {nextLevelThreshold} очков до ур. {userAchievements.level + 1}
+            </p>
+          </div>
+
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <div className="hidden items-center gap-2 lg:flex">
+              <Button onClick={handleExportHabits} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label="Экспорт в Markdown">
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label="Импорт из Markdown">
+                <Upload className="h-4 w-4" />
+              </Button>
+              <ThemeSwitcher />
+            </div>
+            <input type="file" ref={fileInputRef} onChange={handleImportHabits} accept=".md,text/markdown" className="hidden" />
+            <Button onClick={() => setIsCategorySettingsDialogOpen(true)} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label="Настройки категорий">
+              <Settings className="h-4 w-4" />
+            </Button>
+            <AddHabitDialog
+              onSave={addHabit}
+              availableIcons={availableIcons}
+              userCategories={userCategories}
+              triggerButton={
+                <Button className="gap-2 font-bold uppercase">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden lg:inline">Добавить привычку</span>
+                </Button>
+              }
+            />
+          </div>
         </div>
       </header>
 
+      <div className="mb-6 rounded-card border-2 border-border bg-card p-3 shadow-hard">
+        <div className="flex items-center gap-2">
+          <Button onClick={goToPreviousDay} variant="outline" size="icon" aria-label="Предыдущий день" className="h-11 w-11 shrink-0">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
 
-      <div className="w-full flex items-center gap-3 mb-6 p-4 bg-card rounded-lg border">
-        <Button onClick={goToPreviousDay} variant="outline" size="icon" aria-label="Предыдущий день">
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "flex-1 justify-start text-left font-normal min-w-[200px]",
-                !selectedDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarDays className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "PPP", { locale: ru }) : <span>Выберите дату</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              initialFocus
-              locale={ru}
-              disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
-            />
-          </PopoverContent>
-        </Popover>
-        
-        <Button
-          onClick={goToToday}
-          variant="outline"
-          size="sm"
-          disabled={isToday(selectedDate)}
-          className="whitespace-nowrap"
-        >
-          Сегодня
-        </Button>
-        <Button
-          onClick={goToYesterday}
-          variant="outline"
-          size="sm"
-          disabled={isYesterday(selectedDate)}
-          className="whitespace-nowrap"
-        >
-          Вчера
-        </Button>
-        <Button
-          onClick={goToDayBeforeYesterday}
-          variant="outline"
-          size="sm"
-          disabled={isSameDay(selectedDate, subDays(new Date(), 2))}
-          className="whitespace-nowrap"
-        >
-          Позавчера
-        </Button>
-        
-        <Button onClick={goToNextDay} variant="outline" size="icon" aria-label="Следующий день" disabled={isToday(selectedDate)}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+          <div className="flex flex-1 items-center gap-1.5 overflow-x-auto lg:justify-between lg:overflow-visible">
+            {weekDays.map(day => {
+              const isFutureDay = isAfter(startOfDay(day), today);
+              const isSelected = isSameDay(day, selectedDate);
+              const ratio = getDayCompletionRatio(day);
+              return (
+                <button
+                  key={day.toISOString()}
+                  type="button"
+                  disabled={isFutureDay}
+                  onClick={() => handleDateSelect(day)}
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-full border-2 border-border font-mono transition-all lg:h-[52px] lg:w-[52px]",
+                    isFutureDay && "cursor-not-allowed border-dashed opacity-50",
+                    isSelected && !isFutureDay && "bg-primary text-primary-foreground shadow-hard-xs",
+                    !isSelected && !isFutureDay && ratio >= 0.75 && "bg-success-4",
+                    !isSelected && !isFutureDay && ratio >= 0.4 && ratio < 0.75 && "bg-success-3",
+                    !isSelected && !isFutureDay && ratio > 0 && ratio < 0.4 && "bg-amber",
+                    !isSelected && !isFutureDay && ratio === 0 && "bg-card"
+                  )}
+                >
+                  <span className="text-[9px] uppercase leading-none">{format(day, 'EEEEE', { locale: ru })}</span>
+                  <span className="text-xs font-bold leading-none lg:text-sm">{format(day, 'd')}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <Button onClick={goToNextDay} variant="outline" size="icon" aria-label="Следующий день" disabled={isToday(selectedDate)} className="h-11 w-11 shrink-0">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 font-mono text-xs"
+              >
+                <CalendarDays className="h-4 w-4" />
+                <span className="hidden sm:inline">{format(selectedDate, "d MMM", { locale: ru })}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                initialFocus
+                locale={ru}
+                disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t-2 border-dashed border-border pt-3">
+          <button
+            type="button"
+            onClick={goToToday}
+            disabled={isToday(selectedDate)}
+            className={cn(
+              "min-h-[44px] rounded-full border-2 border-border px-3 font-mono text-[11px] uppercase",
+              isToday(selectedDate) ? "bg-foreground text-background" : "bg-card"
+            )}
+          >
+            Сегодня
+          </button>
+          <button
+            type="button"
+            onClick={goToYesterday}
+            disabled={isYesterday(selectedDate)}
+            className={cn(
+              "min-h-[44px] rounded-full border-2 border-border px-3 font-mono text-[11px] uppercase",
+              isYesterday(selectedDate) ? "bg-foreground text-background" : "bg-card"
+            )}
+          >
+            Вчера
+          </button>
+          <button
+            type="button"
+            onClick={goToDayBeforeYesterday}
+            disabled={isSameDay(selectedDate, subDays(new Date(), 2))}
+            className={cn(
+              "min-h-[44px] rounded-full border-2 border-border px-3 font-mono text-[11px] uppercase",
+              isSameDay(selectedDate, subDays(new Date(), 2)) ? "bg-foreground text-background" : "bg-card"
+            )}
+          >
+            Позавчера
+          </button>
+          <span className="ml-auto font-mono text-xs text-muted-foreground">
+            {format(selectedDate, "PPP", { locale: ru })}
+          </span>
+        </div>
       </div>
 
-      {showStatsOverviewSection && <StatsOverview habits={habits} />}
-      {showWeeklyProgressSection && <WeeklyProgress habits={habits} />}
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div>
+          <div className="mb-3 inline-block rounded-full border-2 border-border bg-card px-3 py-1 font-mono text-[11px] uppercase">
+            Привычки · {habits.length}
+          </div>
 
-      {habits.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-border rounded-lg">
-          <FileQuestion className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Пока нет привычек</h2>
-          <p className="text-muted-foreground mb-4">Начните отслеживать свои привычки, чтобы достигать целей!</p>
-          <AddHabitDialog
-            onSave={addHabit}
-            availableIcons={availableIcons}
-            userCategories={userCategories}
-            triggerButton={<Button size="lg">Добавить первую привычку</Button>}
-          />
-        </div>
-      ) : (
-        // Streamlined view - continuous list without category headers
-        <DndContext 
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext 
-            items={habits.map(h => h.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className={
-              isMinimalHabitView 
-                ? "space-y-1" 
-                : isCompactHabitView 
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" 
-                  : "space-y-4"
-            }>
-              {habits.map(habit => (
-                <HabitItem // This will be made sortable in the next step
-                  key={habit.id}
-                  habit={habit}
-                  selectedDate={selectedDateString}
-                  onToggleComplete={toggleHabitCompletion}
-                  onDelete={deleteHabit}
-                  onEdit={editHabit}
-                  availableIcons={availableIcons}
-                  userCategories={userCategories}
-                  isCompactHabitView={isCompactHabitView}
-                  isMinimalHabitView={isMinimalHabitView}
-                />
-              ))}
+          {habits.length === 0 ? (
+            <div className="rounded-card border-2 border-dashed border-border bg-card p-8 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-panel bg-[#FFE9E3]">
+                <FolderOpen className="h-8 w-8 text-primary" />
+              </div>
+              <div className="mx-auto mb-6 flex max-w-[220px] flex-col gap-2">
+                <div className="h-2 rounded-full border-2 border-dashed border-border" />
+                <div className="mx-auto h-2 w-4/5 rounded-full border-2 border-dashed border-border" />
+                <div className="mx-auto h-2 w-3/5 rounded-full border-2 border-dashed border-border" />
+              </div>
+              <h2 className="mb-2 font-display text-xl font-black">Пока нет привычек</h2>
+              <p className="mb-6 text-muted-foreground">Начните отслеживать свои привычки, чтобы достигать целей!</p>
+              <AddHabitDialog
+                onSave={addHabit}
+                availableIcons={availableIcons}
+                userCategories={userCategories}
+                triggerButton={
+                  <Button className="gap-2 font-bold uppercase">
+                    <Plus className="h-4 w-4" />
+                    Добавить первую привычку
+                  </Button>
+                }
+              />
             </div>
-          </SortableContext>
-        </DndContext>
-      )}
-      <PersonalizedTipsSection
-        habits={habits}
-        openRouterSettings={openRouterSettings}
-        onOpenSettingsDialog={() => setIsApiKeyDialogOpen(true)}
-      />
+          ) : (
+            // Streamlined view - continuous list without category headers
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={habits.map(h => h.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className={
+                  isMinimalHabitView
+                    ? "space-y-1"
+                    : isCompactHabitView
+                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+                      : "space-y-4"
+                }>
+                  {habits.map(habit => (
+                    <HabitItem // This will be made sortable in the next step
+                      key={habit.id}
+                      habit={habit}
+                      selectedDate={selectedDateString}
+                      onToggleComplete={toggleHabitCompletion}
+                      onDelete={deleteHabit}
+                      onEdit={editHabit}
+                      availableIcons={availableIcons}
+                      userCategories={userCategories}
+                      isCompactHabitView={isCompactHabitView}
+                      isMinimalHabitView={isMinimalHabitView}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-6">
+          {showStatsOverviewSection && <StatsOverview habits={habits} />}
+          {showWeeklyProgressSection && <WeeklyProgress habits={habits} />}
+          <PersonalizedTipsSection
+            habits={habits}
+            openRouterSettings={openRouterSettings}
+            onOpenSettingsDialog={() => setIsApiKeyDialogOpen(true)}
+          />
+          <AchievementsShelf achievements={achievementsWithProgress} userAchievements={userAchievements} />
+        </div>
+      </div>
+
       <ApiKeyDialog
         isOpen={isApiKeyDialogOpen}
         onClose={() => setIsApiKeyDialogOpen(false)}
