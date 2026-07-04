@@ -142,8 +142,6 @@ export function HabitItem({
     return '';
   };
 
-  const isStopHabitUnmarked = habit.type === 'negative' && !isCompletedOnSelectedDate && !isFailedOnSelectedDate && !isSkippedOnSelectedDate;
-
   // "Week battery": 7 cells for the current calendar week (Mon-Sun), independent of selectedDate.
   // isToday/isFuture are tracked independently of isDone so today's cell always gets a coral
   // border regardless of whether it's filled (see mock screen 2a).
@@ -265,7 +263,7 @@ export function HabitItem({
             <button
               type="button"
               onClick={() => onDelete(habit.id)}
-              aria-label="Delete habit"
+              aria-label={t.habitItem.aria.deleteHabit}
               className="flex items-center justify-center h-[26px] w-[26px] rounded-[9px] border-2 border-border bg-card shadow-hard-xs opacity-[.65] active:translate-y-[1px] active:shadow-none transition-all"
             >
               <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -298,7 +296,7 @@ export function HabitItem({
         <button
           type="button"
           onClick={() => onDelete(habit.id)}
-          aria-label="Delete habit"
+          aria-label={t.habitItem.aria.deleteHabit}
           className="flex items-center justify-center h-[26px] w-[26px] rounded-[9px] border-2 border-border bg-card shadow-hard-xs opacity-[.65] active:translate-y-[1px] active:shadow-none transition-all"
         >
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -404,7 +402,7 @@ export function HabitItem({
         getCardShadowClass(),
         isSkippedOnSelectedDate && "opacity-85",
         isDragging && "rotate-[-1.2deg] opacity-90",
-        isStopHabitUnmarked && "bg-stop-bg dark:bg-card",
+        habit.type === 'negative' && "bg-stop-bg dark:bg-card",
         isCompactHabitView ? "h-full" : ""
       )}
     >
@@ -433,7 +431,7 @@ export function HabitItem({
                     <CardTitle className="text-[15px] font-sans font-bold leading-tight truncate">{habit.name}</CardTitle>
                     <div className={cn(
                       "inline-flex items-center gap-1 rounded-full border-2 border-border px-2 py-0.5 font-mono text-[11px] shrink-0",
-                      isPersonalRecord ? "bg-amber" : "bg-card"
+                      isPersonalRecord ? "bg-amber" : "bg-[#F7F1E5] dark:bg-[#201A38] dark:border-[rgba(242,238,255,0.3)]"
                     )}>
                       <Flame className={cn("h-3 w-3", habit.streak > 0 ? 'text-primary' : 'text-muted-foreground')} />
                       <span>{habit.streak}{isPersonalRecord && ` · ${t.habitItem.recordSuffix}`}</span>

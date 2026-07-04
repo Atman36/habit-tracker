@@ -123,6 +123,7 @@ interface HabitItemTranslations {
     markedRelapse: string;
     markSkipped: string;
     markedSkipped: string;
+    deleteHabit: string;
   };
   showProgress: string;
   showHistory: string;
@@ -455,6 +456,7 @@ export const translations: Record<Language, TranslationContent> = {
         markedRelapse: 'Marked as relapse',
         markSkipped: 'Mark as skipped',
         markedSkipped: 'Marked as skipped',
+        deleteHabit: 'Delete habit',
       },
       showProgress: 'Show progress',
       showHistory: 'History',
@@ -737,6 +739,7 @@ export const translations: Record<Language, TranslationContent> = {
         markedRelapse: 'Отмечено как сорвался',
         markSkipped: 'Отметить как пропущено',
         markedSkipped: 'Отмечено как пропущено',
+        deleteHabit: 'Удалить привычку',
       },
       showProgress: 'Показать прогресс',
       showHistory: 'История отметок',
