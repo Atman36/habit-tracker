@@ -357,7 +357,7 @@ export function HabitTrackerClient() {
   const [userCategories, setUserCategories] = useLocalStorage<UserDefinedCategory[]>('userCategories', []);
   const { toast } = useToast();
   const t = useTranslations();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const dateLocale = language === 'ru' ? ru : enUS;
 
   const sensors = useSensors(
@@ -665,32 +665,60 @@ export function HabitTrackerClient() {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <header className="mb-6">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="shrink-0 -rotate-2 rounded-panel border-2 border-border bg-[#F7F1E5] px-4 py-2 font-display text-lg font-black uppercase text-[#23203A] shadow-hard-xs">
+          <div className="shrink-0 -rotate-2 rounded-panel border-2 border-border bg-[#23203A] px-4 py-2 font-display text-lg font-black uppercase text-[#F7F1E5] shadow-hard-xs dark:bg-[#F7F1E5] dark:text-[#23203A]">
             {t.general.appName}
           </div>
 
           <div className="shrink-0 rounded-full border-2 border-border bg-secondary px-3 py-1.5 font-display text-xs text-secondary-foreground shadow-hard-xs">
-            УР. {userAchievements.level}
+            {t.header.levelChip(userAchievements.level)}
           </div>
 
           <div className="hidden shrink-0 items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 py-1.5 font-mono text-xs lg:flex">
             <Flame className="h-3.5 w-3.5 text-primary" />
-            {bestStreak}
+            {t.stats.cards.bestStreak} {bestStreak}
           </div>
 
-          <div className="order-last w-full lg:order-none lg:w-auto lg:flex-1">
-            <div className="h-4 w-full overflow-hidden rounded-full border-2 border-border bg-card">
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${xpPercent}%`, background: 'linear-gradient(90deg,#FF6B4A,#7C5CFF)' }}
-              />
-            </div>
-            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-              {userAchievements.totalPoints} / {nextLevelThreshold} очков до ур. {userAchievements.level + 1}
-            </p>
+          <p className="ml-auto font-mono text-[10.5px] text-muted-foreground">
+            {t.header.xpProgress(userAchievements.totalPoints, nextLevelThreshold, userAchievements.level + 1)}
+          </p>
+
+          <div className="flex shrink-0 overflow-hidden rounded-[12px] border-2 border-border bg-card shadow-hard-xs">
+            <button
+              type="button"
+              onClick={() => setLanguage('ru')}
+              aria-label={t.languageSwitcher.russian}
+              className={cn(
+                "px-[11px] py-[9px] font-mono text-[11px] uppercase",
+                language === 'ru'
+                  ? "bg-[#23203A] text-[#F7F1E5] dark:bg-[#F7F1E5] dark:text-[#23203A]"
+                  : "bg-transparent text-muted-foreground"
+              )}
+            >
+              RU
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('en')}
+              aria-label={t.languageSwitcher.english}
+              className={cn(
+                "px-[11px] py-[9px] font-mono text-[11px] uppercase",
+                language === 'en'
+                  ? "bg-[#23203A] text-[#F7F1E5] dark:bg-[#F7F1E5] dark:text-[#23203A]"
+                  : "bg-transparent text-muted-foreground"
+              )}
+            >
+              EN
+            </button>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="order-last mt-1 h-4 w-full overflow-hidden rounded-full border-2 border-border bg-card">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${xpPercent}%`, background: 'linear-gradient(90deg,#FF6B4A,#7C5CFF)' }}
+            />
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
             <div className="hidden items-center gap-2 lg:flex">
               <Button onClick={handleExportHabits} variant="outline" size="icon" className="h-[38px] w-[38px] rounded-[10px]" aria-label={t.header.exportAria}>
                 <Download className="h-4 w-4" />
@@ -822,8 +850,13 @@ export function HabitTrackerClient() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div>
-          <div className="mb-3 inline-block rounded-full border-2 border-border bg-card px-3 py-1 font-mono text-[11px] uppercase">
-            Привычки · {habits.length}
+          <div className="mb-3 flex items-center gap-2.5">
+            <span className="-rotate-1 rounded-[10px] border-2 border-border bg-amber px-2.5 py-1.5 font-display text-[10.5px] uppercase tracking-wider text-[#23203A]">
+              {t.general.habitsBadge}
+            </span>
+            <span className="font-mono text-[11px] text-muted-foreground">
+              {habits.length} · {t.general.dragHint}
+            </span>
           </div>
 
           {habits.length === 0 ? (
