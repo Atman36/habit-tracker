@@ -750,6 +750,10 @@ export function HabitTrackerClient() {
               const isFutureDay = isAfter(startOfDay(day), today);
               const isSelected = isSameDay(day, selectedDate);
               const dayProgress = getDayProgress(habits, day);
+              // The success-1..4 fills are fixed light colors (not theme-aware), so the default
+              // theme-aware foreground text (light in dark mode) becomes unreadable on them —
+              // force the light-mode ink color whenever one of those fills is applied.
+              const hasProgressFill = dayProgress.percentage > 0 && dayProgress.activeCount > 0;
               return (
                 <button
                   key={day.toISOString()}
@@ -760,7 +764,8 @@ export function HabitTrackerClient() {
                     "flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-full border-2 border-border font-mono transition-all lg:h-[52px] lg:w-[52px]",
                     isFutureDay && "cursor-not-allowed border-dashed opacity-50",
                     isSelected && !isFutureDay && "bg-primary text-primary-foreground shadow-hard-xs",
-                    !isSelected && !isFutureDay && getDayProgressColorClass(dayProgress.percentage, dayProgress.activeCount)
+                    !isSelected && !isFutureDay && getDayProgressColorClass(dayProgress.percentage, dayProgress.activeCount),
+                    !isSelected && !isFutureDay && hasProgressFill && "text-[#23203A]"
                   )}
                 >
                   <span className="text-[9px] uppercase leading-none">{format(day, 'EEEEE', { locale: dateLocale })}</span>
@@ -838,7 +843,7 @@ export function HabitTrackerClient() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div>
+        <div className="min-w-0">
           <div className="mb-3 flex items-center gap-2.5">
             <span className="-rotate-1 rounded-[10px] border-2 border-border bg-amber px-2.5 py-1.5 font-display text-[10.5px] uppercase tracking-wider text-[#23203A]">
               {t.general.habitsBadge}

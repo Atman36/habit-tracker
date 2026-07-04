@@ -428,7 +428,7 @@ export function HabitItem({
                 </div>
                 <div className="flex-grow min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <CardTitle className="text-[15px] font-sans font-bold leading-tight truncate">{habit.name}</CardTitle>
+                    <CardTitle className="min-w-0 text-[15px] font-sans font-bold leading-tight truncate">{habit.name}</CardTitle>
                     <div className={cn(
                       "inline-flex items-center gap-1 rounded-full border-2 border-border px-2 py-0.5 font-mono text-[11px] shrink-0",
                       isPersonalRecord ? "bg-amber" : "bg-[#F7F1E5] dark:bg-[#201A38] dark:border-[rgba(242,238,255,0.3)]"
@@ -469,7 +469,7 @@ export function HabitItem({
             <div className={cn("h-10 w-10 rounded-panel border-2 border-border flex items-center justify-center flex-shrink-0 dark:bg-muted", pastelTileClass)}>
               <IconComponent className={cn("h-5 w-5", isIconGrayscale && "grayscale")} />
             </div>
-            <CardTitle className="text-[13px] font-sans font-bold truncate">{habit.name}</CardTitle>
+            <CardTitle className="min-w-0 flex-1 text-[13px] font-sans font-bold truncate">{habit.name}</CardTitle>
           </div>
         )}
 
