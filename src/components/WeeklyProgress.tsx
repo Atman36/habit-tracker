@@ -11,7 +11,6 @@ import {
   addWeeks,
   subWeeks,
   isSameDay,
-  parseISO,
   isBefore,
   isAfter,
   startOfDay,
@@ -23,6 +22,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import { getDayProgress, getDayProgressColorClass } from '@/lib/dayProgress';
 
 interface WeeklyProgressProps {
   habits: Habit[];
@@ -37,14 +37,6 @@ interface DayData {
   progressPercentage: number;
   isToday: boolean;
 }
-
-const getProgressBarColor = (percentage: number, activeHabits: number): string => {
-  if (activeHabits === 0 || percentage === 0) return 'bg-card';
-  if (percentage < 40) return 'bg-success-1';
-  if (percentage < 70) return 'bg-success-2';
-  if (percentage < 100) return 'bg-success-3';
-  return 'bg-success-4';
-};
 
 const LEGEND_ITEMS = [
   { className: 'bg-card', label: '0%' },
@@ -70,29 +62,15 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
   const daysOfWeekData: DayData[] = useMemo(() => {
     const daysInCurrentWeek = eachDayOfInterval(weekInterval);
     return daysInCurrentWeek.map(day => {
-      const dayString = format(day, 'yyyy-MM-dd');
-
-      const activeHabitsOnDay = habits.filter(habit => {
-        const habitCreationDayStart = startOfDay(parseISO(habit.createdAt));
-        // Habit is active if the current day is not before its creation date
-        return !isBefore(day, habitCreationDayStart);
-      });
-
-      const completedHabitsOnDay = activeHabitsOnDay.filter(habit =>
-        habit.completions.some(c => c.date === dayString && c.status === 'completed')
-      ).length;
-
-      const progressPercentage = activeHabitsOnDay.length > 0
-        ? Math.round((completedHabitsOnDay / activeHabitsOnDay.length) * 100)
-        : 0;
+      const dayProgress = getDayProgress(habits, day);
 
       return {
         date: day,
         dayName: format(day, 'E', { locale: dateLocale }),
         dateOfMonth: format(day, 'd'),
-        activeHabitsCount: activeHabitsOnDay.length,
-        completedHabitsCount: completedHabitsOnDay,
-        progressPercentage: progressPercentage,
+        activeHabitsCount: dayProgress.activeCount,
+        completedHabitsCount: dayProgress.completedCount,
+        progressPercentage: dayProgress.percentage,
         isToday: isSameDay(day, startOfDay(new Date())),
       };
     });
@@ -160,7 +138,7 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
                     <div
                       className={cn(
                         "absolute bottom-0 left-0 w-full",
-                        getProgressBarColor(dayData.progressPercentage, dayData.activeHabitsCount)
+                        getDayProgressColorClass(dayData.progressPercentage, dayData.activeHabitsCount)
                       )}
                       style={{ height: `${dayData.activeHabitsCount > 0 ? dayData.progressPercentage : 0}%` }}
                     />

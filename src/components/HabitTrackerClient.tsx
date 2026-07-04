@@ -45,6 +45,7 @@ import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 import type { Language } from '@/lib/translations';
 import { defaultLanguage } from '@/lib/translations';
 import { getLocalizedCategoryName, getGoalFallbackForCategory, getGenericGoalFallback } from '@/lib/iconLocalization';
+import { getDayProgress, getDayProgressColorClass } from '@/lib/dayProgress';
 
 const EMPTY_USER_ACHIEVEMENTS: UserAchievements = {
   unlockedAchievements: [],
@@ -652,15 +653,6 @@ export function HabitTrackerClient() {
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const getDayCompletionRatio = (day: Date): number => {
-    if (habits.length === 0) return 0;
-    const dayString = format(day, 'yyyy-MM-dd');
-    const completedCount = habits.filter(h =>
-      h.completions.some(c => c.date === dayString && c.status === 'completed')
-    ).length;
-    return completedCount / habits.length;
-  };
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <header className="mb-6">
@@ -757,7 +749,7 @@ export function HabitTrackerClient() {
             {weekDays.map(day => {
               const isFutureDay = isAfter(startOfDay(day), today);
               const isSelected = isSameDay(day, selectedDate);
-              const ratio = getDayCompletionRatio(day);
+              const dayProgress = getDayProgress(habits, day);
               return (
                 <button
                   key={day.toISOString()}
@@ -768,10 +760,7 @@ export function HabitTrackerClient() {
                     "flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-full border-2 border-border font-mono transition-all lg:h-[52px] lg:w-[52px]",
                     isFutureDay && "cursor-not-allowed border-dashed opacity-50",
                     isSelected && !isFutureDay && "bg-primary text-primary-foreground shadow-hard-xs",
-                    !isSelected && !isFutureDay && ratio >= 0.75 && "bg-success-4",
-                    !isSelected && !isFutureDay && ratio >= 0.4 && ratio < 0.75 && "bg-success-3",
-                    !isSelected && !isFutureDay && ratio > 0 && ratio < 0.4 && "bg-amber",
-                    !isSelected && !isFutureDay && ratio === 0 && "bg-card"
+                    !isSelected && !isFutureDay && getDayProgressColorClass(dayProgress.percentage, dayProgress.activeCount)
                   )}
                 >
                   <span className="text-[9px] uppercase leading-none">{format(day, 'EEEEE', { locale: dateLocale })}</span>
