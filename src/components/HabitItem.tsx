@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Habit, HabitStatus, HabitFrequency, IconOption, UserDefinedCategory } from '@/lib/types';
+import type { Habit, HabitStatus, IconOption, UserDefinedCategory } from '@/lib/types';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -36,12 +36,6 @@ interface HabitItemProps {
 
 // Pastel icon-tile backgrounds (light theme), cycled deterministically by category name.
 const PASTEL_TILE_CLASSES = ['bg-[#FFE9E3]', 'bg-[#E3F2FF]', 'bg-[#F0EBFF]', 'bg-[#FFF4D6]'];
-
-const FREQUENCY_LABELS: Record<HabitFrequency, string> = {
-  daily: 'Ежедневно',
-  weekly: 'Еженедельно',
-  monthly: 'Ежемесячно',
-};
 
 function hashString(key: string): number {
   let hash = 0;
@@ -93,7 +87,8 @@ export function HabitItem({
     onToggleComplete(habit.id, selectedDate, status);
   };
 
-  // Category display name (also used to derive the pastel icon-tile color and the meta line).
+  // Category display name (used in the meta line only — see the pastel hash key below for why
+  // the tile color must NOT be derived from this localized string).
   const uniqueSelectedValue = determineInitialIconValueForItem(habit, userCategories);
   let habitCategoryDisplayName = habit.icon ? getLocalizedIconName(habit.icon, language) : t.addHabit.form.categoryLabel;
 
@@ -105,7 +100,18 @@ export function HabitItem({
     }
   }
 
-  const pastelTileClass = PASTEL_TILE_CLASSES[hashString(habitCategoryDisplayName) % PASTEL_TILE_CLASSES.length];
+  const frequencyLabel = habit.frequency === 'daily'
+    ? t.addHabit.form.frequencyDaily
+    : habit.frequency === 'weekly'
+      ? t.addHabit.form.frequencyWeekly
+      : t.addHabit.form.frequencyMonthly;
+
+  // Pastel tile color must stay stable across language switches, so hash a language-independent
+  // key: the raw (unlocalized) category string from availableIcons, or the icon key itself.
+  const pastelHashKey = (habit.icon && allAvailableIcons[habit.icon])
+    ? allAvailableIcons[habit.icon].category
+    : (habit.icon || defaultIconKey);
+  const pastelTileClass = PASTEL_TILE_CLASSES[hashString(pastelHashKey) % PASTEL_TILE_CLASSES.length];
 
   // A streak is treated as a "personal record" once it reaches the first achievement
   // milestone already used elsewhere in the app (see src/lib/achievements.ts, `first_week`).
@@ -113,10 +119,10 @@ export function HabitItem({
 
   // Border color for the card, tinted to the day's status (see DESIGN-SPEC "Card status coding").
   const getCardBorderClass = () => {
-    if (isSkippedOnSelectedDate) return 'border-dashed border-border';
+    if (isSkippedOnSelectedDate) return 'border-dashed border-border/35';
     if (isFailedOnSelectedDate) return 'border-primary';
     if (isCompletedOnSelectedDate) {
-      return habit.type === 'positive' ? 'border-success-4' : 'border-secondary';
+      return habit.type === 'positive' ? 'border-success-3' : 'border-secondary';
     }
     return 'border-border';
   };
@@ -139,6 +145,8 @@ export function HabitItem({
   const isStopHabitUnmarked = habit.type === 'negative' && !isCompletedOnSelectedDate && !isFailedOnSelectedDate && !isSkippedOnSelectedDate;
 
   // "Week battery": 7 cells for the current calendar week (Mon-Sun), independent of selectedDate.
+  // isToday/isFuture are tracked independently of isDone so today's cell always gets a coral
+  // border regardless of whether it's filled (see mock screen 2a).
   const weekBatteryDays = useMemo(() => {
     const now = new Date();
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
@@ -146,21 +154,16 @@ export function HabitItem({
       const day = addDays(weekStart, i);
       const dateString = format(day, 'yyyy-MM-dd');
       const completion = habit.completions.find(c => c.date === dateString);
-      let cellState: 'done' | 'today' | 'missed' | 'future';
-      if (completion?.status === 'completed') {
-        cellState = 'done';
-      } else if (isAfter(startOfDay(day), startOfDay(now))) {
-        cellState = 'future';
-      } else if (isSameDay(day, now)) {
-        cellState = 'today';
-      } else {
-        cellState = 'missed';
-      }
-      return { dateString, cellState };
+      return {
+        dateString,
+        isDone: completion?.status === 'completed',
+        isToday: isSameDay(day, now),
+        isFuture: isAfter(startOfDay(day), startOfDay(now)),
+      };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habit.completions]);
-  const weekDoneCount = weekBatteryDays.filter(d => d.cellState === 'done').length;
+  const weekDoneCount = weekBatteryDays.filter(d => d.isDone).length;
 
   // Minimal view: just a single line with checkbox and name
   if (isMinimalHabitView) {
@@ -199,8 +202,8 @@ export function HabitItem({
           aria-checked={isCompletedOnSelectedDate}
           onClick={() => handleAction(isCompletedOnSelectedDate ? 'failed' : 'completed')}
           aria-label={isCompletedOnSelectedDate
-            ? (habit.type === 'positive' ? 'Отмечено как выполнено' : 'Отмечено как удержался')
-            : (habit.type === 'positive' ? 'Отметить как выполнено' : 'Отметить как удержался')}
+            ? (habit.type === 'positive' ? t.habitItem.aria.markedComplete : t.habitItem.aria.markedResisted)
+            : (habit.type === 'positive' ? t.habitItem.aria.markComplete : t.habitItem.aria.markResisted)}
           className={cn(
             "flex items-center justify-center h-5 w-5 rounded-full border-2 border-border flex-shrink-0",
             isCompletedOnSelectedDate ? (habit.type === 'negative' ? "bg-secondary text-secondary-foreground" : "bg-success-3 text-foreground") : "bg-card"
@@ -212,78 +215,91 @@ export function HabitItem({
     );
   }
 
-  // Right-side action cluster for positive habits: big circle + small ✕ / trash (or undo) buttons.
-  const renderPositiveActionCluster = () => (
-    <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-      <button
-        type="button"
-        onClick={() => handleAction('completed')}
-        aria-label={isCompletedOnSelectedDate ? 'Отмечено как выполнено' : 'Отметить как выполнено'}
-        className={cn(
-          "flex items-center justify-center h-[60px] w-[60px] rounded-full border-2 transition-all active:scale-95",
-          isCompletedOnSelectedDate
-            ? "bg-accent border-border shadow-hard-xs text-accent-foreground"
-            : "border-dashed border-primary bg-card text-primary"
-        )}
-      >
-        {isCompletedOnSelectedDate ? <Check className="h-7 w-7" /> : <Plus className="h-7 w-7" />}
-      </button>
-      <div className="flex items-center gap-1.5">
+  // Right-side action cluster for positive habits: big circle (unmarked/completed/failed,
+  // each with its own micro-label) + small ✕ / trash (or undo) buttons.
+  const renderPositiveActionCluster = () => {
+    const circleState: 'completed' | 'failed' | 'unmarked' = isCompletedOnSelectedDate ? 'completed' : isFailedOnSelectedDate ? 'failed' : 'unmarked';
+    return (
+      <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
         <button
           type="button"
-          onClick={() => handleAction('failed')}
-          aria-label={isFailedOnSelectedDate ? 'Отмечено как не выполнено' : 'Отметить как не выполнено'}
-          className="flex items-center justify-center h-[26px] w-[26px] rounded-[8px] border-2 border-border bg-card shadow-hard-xs active:translate-y-[1px] active:shadow-none transition-all"
+          onClick={() => handleAction('completed')}
+          aria-label={
+            circleState === 'completed' ? t.habitItem.aria.markedComplete
+              : circleState === 'failed' ? t.habitItem.aria.markedFailed
+              : t.habitItem.aria.markComplete
+          }
+          className={cn(
+            "flex flex-col items-center justify-center gap-0.5 h-[58px] w-[58px] rounded-full border-2 transition-all active:scale-95",
+            circleState === 'completed' && "bg-accent border-border !shadow-[0_4px_0_hsl(var(--border))] text-accent-foreground",
+            circleState === 'failed' && "bg-primary border-border !shadow-[0_4px_0_hsl(var(--border))] text-primary-foreground",
+            circleState === 'unmarked' && "border-dashed border-primary bg-card text-primary"
+          )}
         >
-          <X className="h-3.5 w-3.5 text-primary" />
+          {circleState === 'completed' && <Check className="h-7 w-7" />}
+          {circleState === 'failed' && <X className="h-7 w-7" />}
+          {circleState === 'unmarked' && <Plus className="h-7 w-7" />}
+          <span className={cn("font-mono text-[7.5px] uppercase leading-none", circleState === 'unmarked' && "text-muted-foreground")}>
+            {circleState === 'completed' ? t.habitItem.doneLabel : circleState === 'failed' ? t.habitItem.failLabel : t.habitItem.markLabel}
+          </span>
         </button>
-        {isFailedOnSelectedDate ? (
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => handleAction('failed')}
-            aria-label="Отменить отметку о невыполнении"
-            className="flex items-center justify-center h-[26px] w-[26px] rounded-[8px] border-2 border-border bg-card shadow-hard-xs active:translate-y-[1px] active:shadow-none transition-all"
+            aria-label={isFailedOnSelectedDate ? t.habitItem.aria.markedFailed : t.habitItem.aria.markFailed}
+            className="flex items-center justify-center h-[26px] w-[26px] rounded-[9px] border-2 border-border bg-card shadow-hard-xs active:translate-y-[1px] active:shadow-none transition-all"
           >
-            <RotateCcw className="h-3.5 w-3.5 text-foreground" />
+            <X className="h-3.5 w-3.5 text-primary" />
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onDelete(habit.id)}
-            aria-label="Удалить привычку"
-            className="flex items-center justify-center h-[26px] w-[26px] rounded-[8px] border-2 border-border bg-card shadow-hard-xs active:translate-y-[1px] active:shadow-none transition-all"
-          >
-            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-          </button>
-        )}
+          {isFailedOnSelectedDate ? (
+            <button
+              type="button"
+              onClick={() => handleAction('failed')}
+              aria-label={t.habitItem.aria.markedFailed}
+              className="flex items-center justify-center h-[26px] w-[26px] rounded-[9px] border-2 border-border bg-card shadow-hard-xs active:translate-y-[1px] active:shadow-none transition-all"
+            >
+              <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onDelete(habit.id)}
+              aria-label="Delete habit"
+              className="flex items-center justify-center h-[26px] w-[26px] rounded-[9px] border-2 border-border bg-card shadow-hard-xs opacity-[.65] active:translate-y-[1px] active:shadow-none transition-all"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </button>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Right-side action cluster for negative (stop) habits: state circle + trash.
-  // The three pill buttons (Удержался!/Сорвался/Пропуск) are rendered separately, below the header row.
+  // The three pill buttons (Resisted!/Relapsed/Skip) are rendered separately, below the header row.
   const renderNegativeActionCluster = () => {
     const circleState: 'held' | 'broken' | 'neutral' = isCompletedOnSelectedDate ? 'held' : isFailedOnSelectedDate ? 'broken' : 'neutral';
     return (
       <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
         <div className={cn(
-          "flex flex-col items-center justify-center h-[60px] w-[60px] rounded-full border-2 gap-0.5",
-          circleState === 'held' && "bg-secondary border-border text-secondary-foreground shadow-hard-xs",
-          circleState === 'broken' && "bg-primary border-border text-primary-foreground shadow-hard-xs",
+          "flex flex-col items-center justify-center h-[58px] w-[58px] rounded-full border-2 gap-0.5",
+          circleState === 'held' && "bg-border border-border text-[#F7F1E5] shadow-hard-xs",
+          circleState === 'broken' && "bg-card border-primary text-primary",
           circleState === 'neutral' && "border-dashed border-secondary bg-card text-secondary"
         )}>
           {circleState === 'held' && <Hand className="h-5 w-5" />}
           {circleState === 'broken' && <AlertTriangle className="h-5 w-5" />}
           {circleState === 'neutral' && <Shield className="h-5 w-5" />}
           {circleState !== 'neutral' && (
-            <span className="font-mono text-[8px] uppercase leading-none">{circleState === 'held' ? 'держусь' : 'срыв'}</span>
+            <span className="font-mono text-[8px] uppercase leading-none">{circleState === 'held' ? t.habitItem.holdingLabel : t.habitItem.relapseLabel}</span>
           )}
         </div>
         <button
           type="button"
           onClick={() => onDelete(habit.id)}
-          aria-label="Удалить привычку"
-          className="flex items-center justify-center h-[26px] w-[26px] rounded-[8px] border-2 border-border bg-card shadow-hard-xs active:translate-y-[1px] active:shadow-none transition-all"
+          aria-label="Delete habit"
+          className="flex items-center justify-center h-[26px] w-[26px] rounded-[9px] border-2 border-border bg-card shadow-hard-xs opacity-[.65] active:translate-y-[1px] active:shadow-none transition-all"
         >
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
         </button>
@@ -293,32 +309,47 @@ export function HabitItem({
 
   // The three pill action buttons for negative (stop) habits.
   const renderNegativePills = () => {
-    const pillBase = "flex items-center justify-center gap-1.5 rounded-full border-2 border-border px-2 py-1.5 text-xs font-sans font-semibold shadow-hard-xs transition-all active:translate-y-[1px] active:shadow-none";
+    const pillBase = "flex items-center justify-center gap-1.5 rounded-full border-2 px-2 py-1.5 text-xs font-sans font-semibold transition-all active:translate-y-[1px] active:shadow-none";
     return (
       <div className="grid grid-cols-3 gap-2 px-4 pb-3">
         <button
           type="button"
           onClick={() => handleAction('completed')}
-          aria-label={isCompletedOnSelectedDate ? 'Отмечено как удержался' : 'Отметить как удержался'}
-          className={cn(pillBase, isCompletedOnSelectedDate ? "bg-secondary text-secondary-foreground" : "bg-card text-foreground")}
+          aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedResisted : t.habitItem.aria.markResisted}
+          className={cn(
+            pillBase,
+            isCompletedOnSelectedDate
+              ? "bg-secondary text-white border-border !shadow-[0_2px_0_hsl(var(--border))]"
+              : "bg-card text-secondary border-secondary/50"
+          )}
         >
-          <Shield className="h-3.5 w-3.5" /> Удержался!
+          <Shield className="h-3.5 w-3.5" /> {isCompletedOnSelectedDate ? t.habitItem.negativeCompleted : t.habitItem.negativeComplete}
         </button>
         <button
           type="button"
           onClick={() => handleAction('failed')}
-          aria-label={isFailedOnSelectedDate ? 'Отмечено как сорвался' : 'Отметить как сорвался'}
-          className={cn(pillBase, isFailedOnSelectedDate ? "bg-primary text-primary-foreground" : "bg-card text-foreground")}
+          aria-label={isFailedOnSelectedDate ? t.habitItem.aria.markedRelapse : t.habitItem.aria.markRelapse}
+          className={cn(
+            pillBase,
+            isFailedOnSelectedDate
+              ? "bg-primary text-primary-foreground border-border !shadow-[0_2px_0_hsl(var(--border))]"
+              : "bg-card text-primary dark:text-[#FF9B85] border-primary/50"
+          )}
         >
-          <AlertTriangle className="h-3.5 w-3.5" /> Сорвался
+          <AlertTriangle className="h-3.5 w-3.5" /> {isFailedOnSelectedDate ? t.habitItem.negativeFailedCompleted : t.habitItem.negativeFailed}
         </button>
         <button
           type="button"
           onClick={() => handleAction('skipped')}
-          aria-label={isSkippedOnSelectedDate ? 'Отмечено как пропущено' : 'Отметить как пропущено'}
-          className={cn(pillBase, "bg-card text-foreground")}
+          aria-label={isSkippedOnSelectedDate ? t.habitItem.negativeSkipAria.checked : t.habitItem.negativeSkipAria.unchecked}
+          className={cn(
+            pillBase,
+            isSkippedOnSelectedDate
+              ? "bg-border text-[#F7F1E5] border-border"
+              : "bg-card text-muted-foreground border-border/30"
+          )}
         >
-          <SkipForward className="h-3.5 w-3.5" /> Пропуск
+          <SkipForward className="h-3.5 w-3.5" /> {t.habitItem.skip}
         </button>
       </div>
     );
@@ -331,7 +362,7 @@ export function HabitItem({
         <button
           type="button"
           onClick={() => handleAction('completed')}
-          aria-label={isCompletedOnSelectedDate ? 'Отмечено как выполнено' : 'Отметить как выполнено'}
+          aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedComplete : t.habitItem.aria.markComplete}
           className={cn(
             "flex items-center justify-center h-[22px] w-[22px] rounded-[6px] border-2 border-border",
             isCompletedOnSelectedDate ? (habit.type === 'negative' ? "bg-secondary text-secondary-foreground" : "bg-success-3 text-foreground") : "bg-card text-muted-foreground"
@@ -342,7 +373,7 @@ export function HabitItem({
         <button
           type="button"
           onClick={() => handleAction('failed')}
-          aria-label={isFailedOnSelectedDate ? 'Отмечено как не выполнено' : 'Отметить как не выполнено'}
+          aria-label={isFailedOnSelectedDate ? t.habitItem.aria.markedFailed : t.habitItem.aria.markFailed}
           className={cn(
             "flex items-center justify-center h-[22px] w-[22px] rounded-[6px] border-2 border-border",
             isFailedOnSelectedDate ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
@@ -394,7 +425,7 @@ export function HabitItem({
             userCategories={userCategories}
             triggerButton={
               <div className="flex-grow flex items-start gap-3 min-w-0 cursor-pointer hover:bg-muted/50 p-1 -ml-1 rounded-panel">
-                <div className={cn("h-[54px] w-[52px] rounded-panel border-2 border-border flex items-center justify-center flex-shrink-0 dark:bg-muted", pastelTileClass)}>
+                <div className={cn("h-[52px] w-[52px] rounded-panel border-2 border-border flex items-center justify-center flex-shrink-0 dark:bg-muted", pastelTileClass)}>
                   <IconComponent className={cn("h-7 w-7", isIconGrayscale && "grayscale")} />
                 </div>
                 <div className="flex-grow min-w-0">
@@ -405,29 +436,31 @@ export function HabitItem({
                       isPersonalRecord ? "bg-amber" : "bg-card"
                     )}>
                       <Flame className={cn("h-3 w-3", habit.streak > 0 ? 'text-primary' : 'text-muted-foreground')} />
-                      <span>{habit.streak}</span>
+                      <span>{habit.streak}{isPersonalRecord && ` · ${t.habitItem.recordSuffix}`}</span>
                     </div>
                     {habit.type === 'negative' && (
-                      <Badge variant="destructive" className="shrink-0">СТОП</Badge>
+                      <Badge variant="destructive" className="shrink-0 font-display text-[8px] tracking-[.06em] border-[1.5px]">{t.habitItem.stopBadge}</Badge>
                     )}
                   </div>
-                  <p className="font-mono text-xs text-muted-foreground truncate mt-0.5">
-                    {habitCategoryDisplayName} · {FREQUENCY_LABELS[habit.frequency]}
-                  </p>
+                  {habit.type === 'negative' && isFailedOnSelectedDate ? (
+                    <p className="font-sans text-[11.5px] font-bold text-primary truncate mt-0.5">{t.habitItem.streakResetToday}</p>
+                  ) : (
+                    <p className="font-mono text-xs text-muted-foreground truncate mt-0.5">
+                      {habitCategoryDisplayName} · {frequencyLabel}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1 mt-2">
-                    {weekBatteryDays.map(({ dateString, cellState }) => (
+                    {weekBatteryDays.map(({ dateString, isDone, isToday, isFuture }) => (
                       <div
                         key={dateString}
                         className={cn(
                           "h-[13px] w-5 rounded-[4px] border-[1.5px]",
-                          cellState === 'done' && "bg-success-3 border-border",
-                          cellState === 'today' && "bg-card border-primary",
-                          cellState === 'missed' && "bg-card border-primary",
-                          cellState === 'future' && "bg-card border-dashed border-border opacity-50"
+                          isDone ? "bg-success-3" : "bg-card",
+                          isToday ? "border-primary" : isFuture ? "border-border/25" : "border-border"
                         )}
                       />
                     ))}
-                    <span className="font-mono text-[10px] text-muted-foreground ml-1 whitespace-nowrap">нед. {weekDoneCount}/7</span>
+                    <span className="font-mono text-[10px] text-muted-foreground ml-1 whitespace-nowrap">{t.habitItem.weekCounter(weekDoneCount)}</span>
                   </div>
                 </div>
               </div>
