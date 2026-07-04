@@ -127,6 +127,16 @@ interface HabitItemTranslations {
   showProgress: string;
   showHistory: string;
   noHistory: string;
+  skip: string;
+  holdingLabel: string;
+  relapseLabel: string;
+  stopBadge: string;
+  weekCounter: (n: number) => string;
+  markLabel: string;
+  doneLabel: string;
+  failLabel: string;
+  recordSuffix: string;
+  streakResetToday: string;
 }
 
 interface CategorySettingsTranslations {
@@ -225,6 +235,7 @@ interface AchievementsTranslations {
     epic: string;
     legendary: string;
   };
+  shelfLabel: string;
 }
 
 export interface TranslationContent {
@@ -249,11 +260,15 @@ export interface TranslationContent {
     today: string;
     yesterday: string;
     dayBeforeYesterday: string;
+    habitsBadge: string;
+    dragHint: string;
   };
   header: {
     exportAria: string;
     importAria: string;
     categorySettingsAria: string;
+    levelChip: (level: number) => string;
+    xpProgress: (current: number, needed: number, nextLevel: number) => string;
   };
   dateNavigator: {
     previousDayAria: string;
@@ -300,11 +315,15 @@ export const translations: Record<Language, TranslationContent> = {
       today: 'Today',
       yesterday: 'Yesterday',
       dayBeforeYesterday: '2 days ago',
+      habitsBadge: 'Habits',
+      dragHint: 'drag ⋮⋮ to reorder',
     },
     header: {
       exportAria: 'Export habits to Markdown',
       importAria: 'Import habits from Markdown',
       categorySettingsAria: 'Open settings',
+      levelChip: (level) => `LVL ${level}`,
+      xpProgress: (current, needed, nextLevel) => `${current} / ${needed} points to lvl ${nextLevel}`,
     },
     dateNavigator: {
       previousDayAria: 'Previous day',
@@ -440,6 +459,16 @@ export const translations: Record<Language, TranslationContent> = {
       showProgress: 'Show progress',
       showHistory: 'History',
       noHistory: 'No check-ins yet.',
+      skip: 'Skip',
+      holdingLabel: 'holding',
+      relapseLabel: 'relapse',
+      stopBadge: 'STOP',
+      weekCounter: (n) => `wk ${n}/7`,
+      markLabel: 'mark',
+      doneLabel: 'done',
+      failLabel: 'fail',
+      recordSuffix: 'record',
+      streakResetToday: 'Today relapsed — streak reset',
     },
     categorySettings: {
       title: 'Settings',
@@ -543,6 +572,7 @@ export const translations: Record<Language, TranslationContent> = {
         epic: 'Epic',
         legendary: 'Legendary',
       },
+      shelfLabel: 'Achievements',
     },
   },
   ru: {
@@ -567,11 +597,15 @@ export const translations: Record<Language, TranslationContent> = {
       today: 'Сегодня',
       yesterday: 'Вчера',
       dayBeforeYesterday: 'Позавчера',
+      habitsBadge: 'Привычки',
+      dragHint: 'перетащите ⋮⋮ чтобы изменить порядок',
     },
     header: {
       exportAria: 'Экспорт в Markdown',
       importAria: 'Импорт из Markdown',
       categorySettingsAria: 'Открыть настройки',
+      levelChip: (level) => `УР. ${level}`,
+      xpProgress: (current, needed, nextLevel) => `${current} / ${needed} очков до ур. ${nextLevel}`,
     },
     dateNavigator: {
       previousDayAria: 'Предыдущий день',
@@ -707,6 +741,16 @@ export const translations: Record<Language, TranslationContent> = {
       showProgress: 'Показать прогресс',
       showHistory: 'История отметок',
       noHistory: 'Пока нет отметок.',
+      skip: 'Пропуск',
+      holdingLabel: 'держусь',
+      relapseLabel: 'срыв',
+      stopBadge: 'СТОП',
+      weekCounter: (n) => `нед. ${n}/7`,
+      markLabel: 'отметить',
+      doneLabel: 'готово',
+      failLabel: 'провал',
+      recordSuffix: 'рекорд',
+      streakResetToday: 'Сегодня срыв — серия обнулилась',
     },
     categorySettings: {
       title: 'Настройки',
@@ -810,6 +854,7 @@ export const translations: Record<Language, TranslationContent> = {
         epic: 'Эпическое',
         legendary: 'Легендарное',
       },
+      shelfLabel: 'Достижения',
     },
   },
 };
