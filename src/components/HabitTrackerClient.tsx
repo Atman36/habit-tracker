@@ -939,6 +939,8 @@ export function HabitTrackerClient() {
         userCategories={userCategories}
         onAddCategory={addUserCategoryHandler}
         onDeleteCategory={deleteUserCategoryHandler}
+        onExportHabits={handleExportHabits}
+        onImportHabitsClick={() => fileInputRef.current?.click()}
 
         isCompactHabitView={isCompactHabitView}
         onCompactHabitViewToggle={setIsCompactHabitView}

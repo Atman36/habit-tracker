@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { availableIcons, getIconComponent, defaultIconKey } from '@/components/icons';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Save, Trash2, ChevronDown, Sun, Moon, Laptop } from 'lucide-react';
+import { Save, Trash2, ChevronDown, Sun, Moon, Laptop, Download, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
@@ -32,6 +32,10 @@ interface CategorySettingsDialogProps {
   userCategories: UserDefinedCategory[];
   onAddCategory: (name: string, iconKey: string) => void;
   onDeleteCategory: (id: string) => void;
+  // Data backup — exposed here so export/import stay reachable on mobile,
+  // where the header export/import buttons are hidden (lg-only).
+  onExportHabits: () => void;
+  onImportHabitsClick: () => void;
   // New props for compact view and analytics sections
   isCompactHabitView: boolean;
   onCompactHabitViewToggle: (compact: boolean) => void;
@@ -58,6 +62,8 @@ export function CategorySettingsDialog({
   userCategories,
   onAddCategory,
   onDeleteCategory,
+  onExportHabits,
+  onImportHabitsClick,
   // New destructured props
   isCompactHabitView,
   onCompactHabitViewToggle,
@@ -145,7 +151,7 @@ export function CategorySettingsDialog({
 
             {/* Compact Habit View Toggle */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between rounded-field border-2 border-border bg-card p-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{t.categorySettings.compactLabel}</span>
                 </div>
@@ -160,7 +166,7 @@ export function CategorySettingsDialog({
                   aria-label={t.categorySettings.compactLabel}
                 />
               </div>
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between rounded-field border-2 border-border bg-card p-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{t.categorySettings.minimalLabel}</span>
                 </div>
@@ -182,7 +188,7 @@ export function CategorySettingsDialog({
             {/* Analytics Sections Toggles */}
             <div className="space-y-3">
               <h4 className={SUB_HEADING_CLASS}>{t.categorySettings.analyticsTitle}</h4>
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between rounded-field border-2 border-border bg-card p-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{t.categorySettings.statsLabel}</span>
                 </div>
@@ -192,7 +198,7 @@ export function CategorySettingsDialog({
                   aria-label={t.categorySettings.statsLabel}
                 />
               </div>
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between rounded-field border-2 border-border bg-card p-3">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{t.categorySettings.weeklyLabel}</span>
                 </div>
@@ -202,6 +208,21 @@ export function CategorySettingsDialog({
                   aria-label={t.categorySettings.weeklyLabel}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Data backup (export/import) — kept here so it stays reachable on mobile */}
+          <div className="space-y-3 rounded-panel border-2 border-border p-3">
+            <h3 className={PANEL_HEADING_CLASS}>{t.categorySettings.dataTitle}</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={onExportHabits} className="justify-start gap-2">
+                <Download className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t.header.exportAria}</span>
+              </Button>
+              <Button variant="outline" onClick={onImportHabitsClick} className="justify-start gap-2">
+                <Upload className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t.header.importAria}</span>
+              </Button>
             </div>
           </div>
 
@@ -289,7 +310,7 @@ export function CategorySettingsDialog({
                           <button
                             type="button"
                             onClick={() => onDeleteCategory(category.id)}
-                            aria-label={`Удалить категорию ${category.name}`}
+                            aria-label={t.categorySettings.deleteCategoryAria(category.name)}
                             className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-md border-2 border-border text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
                           >
                             <Trash2 className="h-4 w-4" />

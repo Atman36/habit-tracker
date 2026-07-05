@@ -28,7 +28,7 @@ const RARITY_COLORS: Record<Achievement['rarity'], string> = {
   common: 'bg-card text-foreground',
   rare: 'bg-accent text-accent-foreground',
   epic: 'bg-secondary text-secondary-foreground',
-  legendary: 'bg-amber text-foreground'
+  legendary: 'bg-amber text-[#23203A]'
 };
 
 const RARITY_ICONS = {
@@ -156,7 +156,7 @@ function UserStats({ userAchievements }: { userAchievements: UserAchievements })
         <div className="text-sm text-muted-foreground">{t.achievements.stats.achievements}</div>
       </div>
 
-      <div className="rounded-panel border-2 border-border bg-amber p-4 text-center shadow-hard-sm text-foreground">
+      <div className="rounded-panel border-2 border-border bg-amber p-4 text-center shadow-hard-sm text-[#23203A]">
         <div className="font-display text-2xl font-bold">{rarityStats.legendary || 0}</div>
         <div className="text-sm">{t.achievements.stats.legendary}</div>
       </div>

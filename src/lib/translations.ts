@@ -151,6 +151,7 @@ interface CategorySettingsTranslations {
   analyticsTitle: string;
   statsLabel: string;
   weeklyLabel: string;
+  dataTitle: string;
   manageTitle: string;
   manageDescription: string;
   newCategoryLabel: string;
@@ -159,6 +160,7 @@ interface CategorySettingsTranslations {
   chooseIconPlaceholder: string;
   saveCategory: string;
   yourCategoriesTitle: string;
+  deleteCategoryAria: (name: string) => string;
   closeButton: string;
   languageLabel: string;
 }
@@ -483,6 +485,7 @@ export const translations: Record<Language, TranslationContent> = {
       analyticsTitle: 'Analytics visibility',
       statsLabel: 'Show "Stats overview"',
       weeklyLabel: 'Show "Weekly progress"',
+      dataTitle: 'Data',
       manageTitle: 'Category manager',
       manageDescription: 'Create reusable categories for your routines.',
       newCategoryLabel: 'Category name',
@@ -491,6 +494,7 @@ export const translations: Record<Language, TranslationContent> = {
       chooseIconPlaceholder: 'Choose an icon',
       saveCategory: 'Save category',
       yourCategoriesTitle: 'Your categories',
+      deleteCategoryAria: (name) => `Delete category ${name}`,
       closeButton: 'Close',
       languageLabel: 'Interface language',
     },
@@ -766,6 +770,7 @@ export const translations: Record<Language, TranslationContent> = {
       analyticsTitle: 'Отображение аналитики',
       statsLabel: 'Показывать «Обзор статистики»',
       weeklyLabel: 'Показывать «Прогресс за неделю»',
+      dataTitle: 'Данные',
       manageTitle: 'Управление категориями',
       manageDescription: 'Создавайте свои категории для привычек.',
       newCategoryLabel: 'Название категории',
@@ -774,6 +779,7 @@ export const translations: Record<Language, TranslationContent> = {
       chooseIconPlaceholder: 'Выберите иконку',
       saveCategory: 'Сохранить категорию',
       yourCategoriesTitle: 'Ваши категории',
+      deleteCategoryAria: (name) => `Удалить категорию ${name}`,
       closeButton: 'Закрыть',
       languageLabel: 'Язык интерфейса',
     },

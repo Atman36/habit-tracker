@@ -431,7 +431,7 @@ export function HabitItem({
                     <CardTitle className="min-w-0 text-[15px] font-sans font-bold leading-tight truncate">{habit.name}</CardTitle>
                     <div className={cn(
                       "inline-flex items-center gap-1 rounded-full border-2 border-border px-2 py-0.5 font-mono text-[11px] shrink-0",
-                      isPersonalRecord ? "bg-amber" : "bg-[#F7F1E5] dark:bg-[#201A38] dark:border-[rgba(242,238,255,0.3)]"
+                      isPersonalRecord ? "bg-amber text-[#23203A]" : "bg-[#F7F1E5] dark:bg-[#201A38] dark:border-[rgba(242,238,255,0.3)]"
                     )}>
                       <Flame className={cn("h-3 w-3", habit.streak > 0 ? 'text-primary' : 'text-muted-foreground')} />
                       <span>{habit.streak}{isPersonalRecord && ` · ${t.habitItem.recordSuffix}`}</span>

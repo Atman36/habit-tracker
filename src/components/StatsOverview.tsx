@@ -112,8 +112,10 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
       label: t.stats.cards.bestStreak,
       value: `${bestStreak}${streakUnit}`,
       icon: Award,
-      tileClassName: "bg-amber border-background/20 text-foreground",
-      iconClassName: "text-foreground",
+      // Amber is a fixed light color in both themes, so text must stay ink —
+      // theme-aware text-foreground turns near-white in dark mode (unreadable on amber).
+      tileClassName: "bg-amber border-background/20 text-[#23203A]",
+      iconClassName: "text-[#23203A]",
     },
     {
       label: t.stats.cards.completedThisMonth,
