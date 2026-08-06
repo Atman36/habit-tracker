@@ -16,7 +16,7 @@ const isValidLanguage = (value: string): value is Language =>
   Object.prototype.hasOwnProperty.call(translations, value);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useLocalStorage<Language>('app_language', defaultLanguage);
+  const [language, setLanguage] = useLocalStorage<Language>('language', defaultLanguage);
   const resolvedLanguage = isValidLanguage(language as string) ? language : defaultLanguage;
 
   useEffect(() => {
@@ -42,6 +42,8 @@ export function useLanguage() {
 }
 
 export function useTranslations(): TranslationContent {
-  const { language } = useLanguage();
+  const context = useContext(LanguageContext);
+  // Fallback to default language if context is not yet initialized
+  const language = context?.language ?? defaultLanguage;
   return translations[language];
 }
