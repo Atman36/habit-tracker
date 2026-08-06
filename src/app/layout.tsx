@@ -5,7 +5,6 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from '@/components/LanguageProvider';
-import { translations } from '@/lib/translations';
 
 const fontDisplay = Unbounded({
   variable: '--font-display',
@@ -26,8 +25,8 @@ const fontMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: translations.en.metadata.title,
-  description: translations.en.metadata.description,
+  title: 'Habit Tracker',
+  description: 'Plan, track, and improve your routines with flexible analytics and AI tips.',
 };
 
 export default function RootLayout({
