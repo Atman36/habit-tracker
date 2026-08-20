@@ -198,7 +198,7 @@ export function HabitItem({
           type="button"
           role="checkbox"
           aria-checked={isCompletedOnSelectedDate}
-          onClick={() => handleAction(isCompletedOnSelectedDate ? 'failed' : 'completed')}
+          onClick={() => handleAction('completed')}
           aria-label={isCompletedOnSelectedDate
             ? (habit.type === 'positive' ? t.habitItem.aria.markedComplete : t.habitItem.aria.markedResisted)
             : (habit.type === 'positive' ? t.habitItem.aria.markComplete : t.habitItem.aria.markResisted)}
