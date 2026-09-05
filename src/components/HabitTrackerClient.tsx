@@ -56,7 +56,7 @@ const EMPTY_USER_ACHIEVEMENTS: UserAchievements = {
 
 
 export function HabitTrackerClient() {
-  const [habits, setHabits] = useLocalStorage<Habit[]>('habits', []);
+  const [habits, setHabits, habitsHydrated] = useLocalStorage<Habit[]>('habits', []);
   const [userCategories, setUserCategories] = useLocalStorage<UserDefinedCategory[]>('userCategories', []);
   const { toast } = useToast();
   const t = useTranslations();
@@ -95,6 +95,7 @@ export function HabitTrackerClient() {
   const [showWeeklyProgressSection, setShowWeeklyProgressSection] = useLocalStorage<boolean>('show_weekly_progress_section', true);
   
   const [openRouterSettings, setOpenRouterSettings] = useLocalStorage<OpenRouterSettings | null>('openrouter_settings', null);
+  const [storedUserAchievements, setStoredUserAchievements, achievementsHydrated] = useLocalStorage<UserAchievements>('user_achievements', EMPTY_USER_ACHIEVEMENTS);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   useEffect(() => setMounted(true), []);
   
@@ -308,13 +309,26 @@ export function HabitTrackerClient() {
     setSelectedDate(startOfDay(subDays(new Date(), 2)));
   };
 
-  // Достижения/уровень: производные данные из habits (см. lib/achievements.ts).
-  // Не персистентны — пересчитываются от пустой базы при каждом изменении habits.
-  // Хуки обязаны выполняться до раннего return (Rules of Hooks).
+  // Earned achievements are retained independently of the current habit list.
+  // Waiting for both keys to hydrate avoids replacing stored awards with the empty defaults.
   const userAchievements = useMemo(
-    () => updateUserAchievements(habits, EMPTY_USER_ACHIEVEMENTS),
-    [habits]
+    () => updateUserAchievements(habits, storedUserAchievements),
+    [habits, storedUserAchievements]
   );
+  useEffect(() => {
+    if (!habitsHydrated || !achievementsHydrated) {
+      return;
+    }
+
+    setStoredUserAchievements(previous => {
+      const updated = updateUserAchievements(habits, previous);
+      return updated.unlockedAchievements.length === previous.unlockedAchievements.length
+        && updated.totalPoints === previous.totalPoints
+        && updated.level === previous.level
+        ? previous
+        : updated;
+    });
+  }, [achievementsHydrated, habits, habitsHydrated, setStoredUserAchievements]);
   const achievementsWithProgress = useMemo(
     () => getAllAchievementsWithProgress(habits, userAchievements),
     [habits, userAchievements]

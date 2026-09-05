@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
+function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void, boolean] {
   // Always start from `initialValue` on both server and the client's first (hydration) render.
   // Reading localStorage synchronously in the initializer would make the very first client
   // render diverge from the server-rendered markup whenever the stored value differs from
@@ -10,6 +10,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
   // reports as a hydration mismatch. Instead, the real stored value is applied in an effect
   // below, after hydration completes.
   const [storedValue, setStoredValue] = useState<T>(initialValue);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -23,6 +24,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
     } catch (error) {
       console.error(error);
     }
+    setHasHydrated(true);
     // Only re-sync from storage when the key itself changes; not on every storedValue update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
@@ -59,7 +61,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
   }, [key]);
 
 
-  return [storedValue, setValue];
+  return [storedValue, setValue, hasHydrated];
 }
 
 export default useLocalStorage;

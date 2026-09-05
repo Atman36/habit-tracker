@@ -194,7 +194,7 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
         {trigger || defaultTrigger}
       </DialogTrigger>
 
-      <DialogContent className="max-w-[760px] max-h-[80vh] overflow-hidden">
+      <DialogContent className="max-w-[760px] max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="font-display uppercase flex items-center gap-2">
             <Trophy className="h-5 w-5" />
@@ -202,7 +202,7 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
           </DialogTitle>
         </DialogHeader>
 
-        <div className="overflow-y-auto">
+        <div className="min-h-0 overflow-y-auto">
           <UserStats userAchievements={userAchievements} />
 
           <Tabs defaultValue="all" className="w-full">
