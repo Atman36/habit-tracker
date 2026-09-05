@@ -83,6 +83,7 @@ export function HabitTrackerClient() {
     }
   }
   const [mounted, setMounted] = useState(false);
+  const [habitsReady, setHabitsReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
@@ -95,7 +96,7 @@ export function HabitTrackerClient() {
   const [showWeeklyProgressSection, setShowWeeklyProgressSection] = useLocalStorage<boolean>('show_weekly_progress_section', true);
   
   const [openRouterSettings, setOpenRouterSettings] = useLocalStorage<OpenRouterSettings | null>('openrouter_settings', null);
-  const [storedUserAchievements, setStoredUserAchievements, achievementsHydrated] = useLocalStorage<UserAchievements>('user_achievements', EMPTY_USER_ACHIEVEMENTS);
+  const [userAchievements, setUserAchievements, achievementsHydrated] = useLocalStorage<UserAchievements>('user_achievements', EMPTY_USER_ACHIEVEMENTS);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   useEffect(() => setMounted(true), []);
   
@@ -193,7 +194,7 @@ export function HabitTrackerClient() {
 
 
   useEffect(() => {
-    if (mounted) {
+    if (habitsHydrated) {
       setHabits(prev => recalculateAllStreaks(
         prev.map(h => ({
           ...h,
@@ -206,9 +207,10 @@ export function HabitTrackerClient() {
           }))
         }))
       ));
+      setHabitsReady(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted]); 
+  }, [habitsHydrated]);
 
   const handleExportHabits = () => {
     if (habits.length === 0 && userCategories.length === 0) {
@@ -310,25 +312,21 @@ export function HabitTrackerClient() {
   };
 
   // Earned achievements are retained independently of the current habit list.
-  // Waiting for both keys to hydrate avoids replacing stored awards with the empty defaults.
-  const userAchievements = useMemo(
-    () => updateUserAchievements(habits, storedUserAchievements),
-    [habits, storedUserAchievements]
-  );
+  // Wait for storage hydration and initial streak normalization before awarding.
   useEffect(() => {
-    if (!habitsHydrated || !achievementsHydrated) {
+    if (!habitsReady || !achievementsHydrated) {
       return;
     }
 
-    setStoredUserAchievements(previous => {
-      const updated = updateUserAchievements(habits, previous);
-      return updated.unlockedAchievements.length === previous.unlockedAchievements.length
-        && updated.totalPoints === previous.totalPoints
-        && updated.level === previous.level
-        ? previous
-        : updated;
-    });
-  }, [achievementsHydrated, habits, habitsHydrated, setStoredUserAchievements]);
+    const updated = updateUserAchievements(habits, userAchievements);
+    if (
+      updated.unlockedAchievements.length !== userAchievements.unlockedAchievements.length
+      || updated.totalPoints !== userAchievements.totalPoints
+      || updated.level !== userAchievements.level
+    ) {
+      setUserAchievements(updated);
+    }
+  }, [achievementsHydrated, habits, habitsReady, setUserAchievements, userAchievements]);
   const achievementsWithProgress = useMemo(
     () => getAllAchievementsWithProgress(habits, userAchievements),
     [habits, userAchievements]
