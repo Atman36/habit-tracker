@@ -522,7 +522,7 @@ export const translations: Record<Language, TranslationContent> = {
       selectPlaceholder: 'Select a model',
       customModelPlaceholder: 'Enter a full model name, e.g. anthropic/claude-3-opus',
       modelHelper: 'See the full list on OpenRouter. DeepSeek Chat offers a great quality/price balance.',
-      modelHelperCustom: 'The "Other model…" option opens a manual input field.',
+      modelHelperCustom: 'The “Other model…” option opens a manual input field.',
       systemPromptLabel: 'System prompt',
       systemPromptHelper: 'This prompt defines how the assistant replies to your habit questions.',
       cancel: 'Cancel',

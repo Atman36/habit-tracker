@@ -314,7 +314,7 @@ export function AddHabitDialog({
                                     key={uniqueValue}
                                     value={uniqueValue}
                                     title={uc.name}
-                                    className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-muted"
+                                    className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-accent dark:data-[state=checked]:text-accent-foreground"
                                   >
                                     <div className="flex items-center gap-2">
                                       <IconComp className="h-4 w-4" />
@@ -345,7 +345,7 @@ export function AddHabitDialog({
                                       key={uniqueValue}
                                       value={uniqueValue}
                                       title={getLocalizedIconName(iconOption.key, language)}
-                                      className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-muted"
+                                      className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-accent dark:data-[state=checked]:text-accent-foreground"
                                     >
                                         <div className="flex items-center gap-2">
                                         <IconComp className="h-4 w-4" />
