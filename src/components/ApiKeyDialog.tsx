@@ -119,7 +119,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
               <Input
                 id="apiKey"
                 type="password"
-                autoComplete="off"
+                autoComplete="new-password"
                 spellCheck={false}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
