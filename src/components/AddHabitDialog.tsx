@@ -421,7 +421,7 @@ export function AddHabitDialog({
                         onClick={() => field.onChange('positive')}
                         className={cn(
                           "flex flex-col items-center gap-2 rounded-field border-2 border-border bg-card p-3 text-sm font-medium transition-colors",
-                          field.value === 'positive' && "bg-success-3 shadow-hard-sm dark:bg-muted"
+                          field.value === 'positive' && "bg-success-3 text-accent-foreground shadow-hard-sm"
                         )}
                       >
                         <Dumbbell className="h-5 w-5" />
@@ -432,7 +432,7 @@ export function AddHabitDialog({
                         onClick={() => field.onChange('negative')}
                         className={cn(
                           "flex flex-col items-center gap-2 rounded-field border-2 border-border bg-card p-3 text-sm font-medium transition-colors",
-                          field.value === 'negative' && "bg-success-3 shadow-hard-sm dark:bg-muted"
+                          field.value === 'negative' && "bg-success-3 text-accent-foreground shadow-hard-sm"
                         )}
                       >
                         <Ban className="h-5 w-5" />
