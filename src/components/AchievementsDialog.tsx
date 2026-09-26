@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Achievement, UserAchievements } from '@/lib/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -194,12 +194,13 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
         {trigger || defaultTrigger}
       </DialogTrigger>
 
-      <DialogContent className="max-w-[760px] max-h-[80vh] overflow-hidden">
+      <DialogContent className="max-w-[808px] max-h-[80vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="font-display uppercase flex items-center gap-2">
             <Trophy className="h-5 w-5" />
             {t.achievements.title}
           </DialogTitle>
+          <DialogDescription>{t.achievements.subtitle}</DialogDescription>
         </DialogHeader>
 
         <div className="overflow-y-auto">

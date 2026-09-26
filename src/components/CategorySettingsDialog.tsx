@@ -23,7 +23,6 @@ import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
 import { Separator } from '@/components/ui/separator';
 import { useTranslations, useLanguage } from '@/components/LanguageProvider';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getLocalizedIconName } from '@/lib/iconLocalization';
 
 interface CategorySettingsDialogProps {
@@ -75,7 +74,7 @@ export function CategorySettingsDialog({
   onShowWeeklyProgressSectionToggle,
 }: CategorySettingsDialogProps) {
   const t = useTranslations();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedIconKey, setSelectedIconKey] = useState<string>(defaultIconKey);
   const [isIconPopoverOpen, setIsIconPopoverOpen] = useState(false);
@@ -103,7 +102,7 @@ export function CategorySettingsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[460px]">
+      <DialogContent className="sm:max-w-[508px]">
         <DialogHeader>
           <DialogTitle className="font-display uppercase">{t.categorySettings.title}</DialogTitle>
           <DialogDescription>
@@ -141,7 +140,28 @@ export function CategorySettingsDialog({
             {/* Language Switcher */}
             <div className="flex items-center justify-between">
               <Label className={SUB_HEADING_CLASS}>{t.categorySettings.languageLabel}</Label>
-              <LanguageSwitcher className="w-[150px]" />
+              <div className="flex gap-1" role="group" aria-label={t.languageSwitcher.label}>
+                <button
+                  type="button"
+                  onClick={() => setLanguage('ru')}
+                  className={cn(
+                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors",
+                    language === 'ru' ? "bg-foreground text-background" : "bg-card text-foreground"
+                  )}
+                >
+                  {t.languageSwitcher.russian}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage('en')}
+                  className={cn(
+                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors",
+                    language === 'en' ? "bg-foreground text-background" : "bg-card text-foreground"
+                  )}
+                >
+                  {t.languageSwitcher.english}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -327,7 +347,7 @@ export function CategorySettingsDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="w-full">
               {t.categorySettings.closeButton}
             </Button>
           </DialogClose>

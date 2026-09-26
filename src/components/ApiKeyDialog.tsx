@@ -97,7 +97,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-[488px]">
         <DialogHeader>
           <DialogTitle className="font-display uppercase flex items-center">
             <Settings className="mr-2 h-5 w-5" />
@@ -158,7 +158,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
             )}
 
             <p className="text-xs text-muted-foreground">
-              {t.apiDialog.modelHelper}
+              {t.apiDialog.modelHelper} {t.apiDialog.modelHelperCustom}
             </p>
           </div>
 

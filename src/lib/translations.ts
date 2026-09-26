@@ -187,6 +187,7 @@ interface ApiDialogTranslations {
   selectPlaceholder: string;
   customModelPlaceholder: string;
   modelHelper: string;
+  modelHelperCustom: string;
   systemPromptLabel: string;
   systemPromptHelper: string;
   cancel: string;
@@ -213,6 +214,7 @@ interface ProgressChartTranslations {
 interface AchievementsTranslations {
   triggerLabel: string;
   title: string;
+  subtitle: string;
   progressLabel: string;
   obtainedLabel: string;
   stats: {
@@ -520,6 +522,7 @@ export const translations: Record<Language, TranslationContent> = {
       selectPlaceholder: 'Select a model',
       customModelPlaceholder: 'Enter a full model name, e.g. anthropic/claude-3-opus',
       modelHelper: 'See the full list on OpenRouter. DeepSeek Chat offers a great quality/price balance.',
+      modelHelperCustom: 'The "Other model…" option opens a manual input field.',
       systemPromptLabel: 'System prompt',
       systemPromptHelper: 'This prompt defines how the assistant replies to your habit questions.',
       cancel: 'Cancel',
@@ -554,6 +557,7 @@ export const translations: Record<Language, TranslationContent> = {
     achievements: {
       triggerLabel: 'Achievements',
       title: 'Achievements & badges',
+      subtitle: 'Your level, points and badges',
       progressLabel: 'Progress',
       obtainedLabel: 'Unlocked:',
       stats: {
@@ -806,6 +810,7 @@ export const translations: Record<Language, TranslationContent> = {
       selectPlaceholder: 'Выберите модель',
       customModelPlaceholder: 'Введите название модели, например: anthropic/claude-3-opus',
       modelHelper: 'Полный список моделей доступен на сайте OpenRouter. Рекомендуем DeepSeek Chat.',
+      modelHelperCustom: 'Пункт «Другая модель…» открывает поле ручного ввода.',
       systemPromptLabel: 'Системный промпт',
       systemPromptHelper: 'Этот промпт определяет, как AI отвечает на вопросы о привычках.',
       cancel: 'Отмена',
@@ -840,6 +845,7 @@ export const translations: Record<Language, TranslationContent> = {
     achievements: {
       triggerLabel: 'Достижения',
       title: 'Достижения и значки',
+      subtitle: 'Ваш уровень, очки и значки',
       progressLabel: 'Прогресс',
       obtainedLabel: 'Получено:',
       stats: {
