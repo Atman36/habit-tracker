@@ -12,7 +12,6 @@ import {
   subWeeks,
   isSameDay,
   isBefore,
-  isAfter,
   startOfDay,
 } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';

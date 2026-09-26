@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "lint:ci": "eslint . --max-warnings 123",
+    "lint:ci": "eslint . --max-warnings 7",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/lib/*.test.ts"
   },

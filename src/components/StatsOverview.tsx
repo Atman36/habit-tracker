@@ -7,7 +7,7 @@ import { format, subDays, eachDayOfInterval, parseISO, startOfDay } from 'date-f
 import { TrendingUp, Repeat, Award, BarChartBig, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
-import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import { useTranslations } from '@/components/LanguageProvider';
 
 interface StatsOverviewProps {
   habits: Habit[];
@@ -28,7 +28,6 @@ interface MetricTile {
 
 export function StatsOverview({ habits }: StatsOverviewProps) {
   const t = useTranslations();
-  const { language } = useLanguage();
   const today = startOfDay(new Date());
   const last30DaysInterval = {
     start: subDays(today, 29), // 30 days including today

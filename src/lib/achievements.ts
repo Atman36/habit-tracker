@@ -1,5 +1,5 @@
-import type { Habit, HabitCompletion, Achievement, AchievementType, UserAchievements } from './types';
-import { format, parseISO, isValid, differenceInDays, startOfDay, isToday, isWeekend, isSameDay, subDays } from 'date-fns';
+import type { Habit, Achievement, AchievementType, UserAchievements } from './types';
+import { format, startOfDay, subDays } from 'date-fns';
 
 // Definition of every available achievement
 export const AVAILABLE_ACHIEVEMENTS: Omit<Achievement, 'id' | 'unlockedAt' | 'progress'>[] = [

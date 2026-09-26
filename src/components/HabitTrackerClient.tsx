@@ -12,7 +12,7 @@ import { AchievementsShelf } from './AchievementsShelf';
 import { updateUserAchievements, getAllAchievementsWithProgress, calculateUserLevel } from '@/lib/achievements';
 import { Button } from '@/components/ui/button';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { format, parseISO, isValid, subDays, isSameDay, startOfDay, addDays, isToday, isYesterday, startOfWeek, endOfWeek, eachDayOfInterval, isAfter } from 'date-fns';
+import { format, subDays, isSameDay, startOfDay, addDays, isToday, isYesterday, startOfWeek, endOfWeek, eachDayOfInterval, isAfter } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import {

@@ -1,16 +1,11 @@
 
 import type { IconOption } from '@/lib/types';
 import {
-  BookOpen, Dumbbell, Coffee, Bed, Zap, Apple, DollarSign, Lightbulb, Briefcase, Smile, Brain, Target, Droplets, CalendarDays, CheckCircle, TrendingUp,
-  Clock, Wind, PersonStanding, HandHeart, Carrot, Ban, Bike, Home, GraduationCap, NotebookText, Star, Moon, ShowerHead, Palette, Utensils, Hourglass, ThumbsDown,
-  Activity, Anchor, Award, BarChart3, BatteryCharging, Bell, Bone, Bookmark, Box, Building2, Camera, Clapperboard, Cloudy, Code, Cog, Compass,
-  Cpu, CreditCard, Crop, Database, Ear, Eraser, Factory, Feather, Figma, FileText, Filter, Flag, Folder, Footprints, Forklift, Gamepad2,
-  Gauge, Ghost, Gift, GitFork, Globe, Grab, Grip, Headphones, Heart, HelpCircle, Image, Infinity, Info, IterationCcw, KeyRound, Landmark, Layers,
-  LayoutGrid, ListChecks, LogIn, LogOut, Mail, MapPin, Medal, Megaphone, Menu, MessageCircle, Mic2, MousePointerClick, Music2, Newspaper, Package,
-  PaintBucket, Paperclip, ParkingCircle, Pencil, Percent, Phone, PieChart, Pin, Plane, Plug, Pocket, Printer, Puzzle, Quote, Repeat, RotateCcw, Rss,
-  Save, ScanLine, Scissors, ScreenShare, Send, Server, Settings2, ShieldCheck, ShoppingBag, Sigma, Smartphone, Sprout, Sticker, SunMedium, Sunset,
-  SwissFranc, Table, Tag, Tent, Terminal, TestTube2, TextCursorInput, Ticket, ToyBrick, Train, Trash2, TreePine, Trophy, Tv, Umbrella, Vault, Video,
-  Voicemail, Wallet, Watch, Wifi, Wine, Wrench, Youtube, CircleDot, ClipboardList, Users, Leaf, Flame, BarChart, BriefcaseMedical, MountainSnow, School, TrendingDown
+  BookOpen, Dumbbell, Coffee, Bed, Zap, Apple, DollarSign, Lightbulb, Briefcase, Smile, Brain, Target, Droplets, CalendarDays, CheckCircle,
+  TrendingUp, Clock, Wind, PersonStanding, HandHeart, Carrot, Ban, Bike, Home, GraduationCap, NotebookText, Moon, ShowerHead, Palette, Utensils,
+  Hourglass, ThumbsDown, Activity, Anchor, Award, Bell, Bookmark, Building2, Cloudy, Code, FileText, Gamepad2, Gauge, Heart, KeyRound, ListChecks,
+  Newspaper, Pencil, Puzzle, Repeat, ShieldCheck, Sprout, Terminal, Wine, CircleDot, ClipboardList, Users, Leaf, BarChart, BriefcaseMedical,
+  MountainSnow, School, TrendingDown
 } from 'lucide-react';
 
 export const ADDITIONAL_CATEGORY_KEY = 'Дополнительные';

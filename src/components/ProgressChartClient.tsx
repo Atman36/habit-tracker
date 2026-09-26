@@ -3,9 +3,9 @@
 
 import type { ReactNode } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Cell } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import type { Habit, HabitStatus } from '@/lib/types';
-import { format, subDays, eachDayOfInterval, parseISO, startOfDay, isSameDay } from 'date-fns';
+import { format, subDays, eachDayOfInterval, parseISO, startOfDay } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
 import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 

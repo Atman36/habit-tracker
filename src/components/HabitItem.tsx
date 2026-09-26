@@ -159,7 +159,6 @@ export function HabitItem({
         isFuture: isAfter(startOfDay(day), startOfDay(now)),
       };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habit.completions]);
   const weekDoneCount = weekBatteryDays.filter(d => d.isDone).length;
 
