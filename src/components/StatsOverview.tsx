@@ -91,7 +91,7 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
     return t.stats.motivational.keepGoing;
   };
 
-  const streakUnit = language === 'ru' ? ' дн.' : ' days';
+  const streakUnit = t.stats.cards.streakUnit;
 
   const metricTiles: MetricTile[] = [
     {

@@ -35,6 +35,7 @@ interface StatsTranslations {
     averageStreak: string;
     bestStreak: string;
     completedThisMonth: string;
+    streakUnit: string;
   };
   motivational: {
     empty: string;
@@ -370,6 +371,7 @@ export const translations: Record<Language, TranslationContent> = {
         averageStreak: 'Average streak',
         bestStreak: 'Best streak',
         completedThisMonth: 'Done this month',
+        streakUnit: ' days',
       },
       motivational: {
         empty: 'Add habits to see personalized insights!',
@@ -655,6 +657,7 @@ export const translations: Record<Language, TranslationContent> = {
         averageStreak: 'Средняя серия',
         bestStreak: 'Лучшая серия',
         completedThisMonth: 'Выполнено за месяц',
+        streakUnit: ' дн.',
       },
       motivational: {
         empty: 'Добавьте привычки, чтобы увидеть аналитику!',
