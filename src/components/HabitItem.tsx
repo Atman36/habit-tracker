@@ -71,7 +71,7 @@ export function HabitItem({
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 1000 : 'auto',
-    position: 'relative' as 'relative', // Ensure type correctness for style prop
+    position: 'relative' as const, // Ensure type correctness for style prop
   };
 
   const completionForSelectedDate = habit.completions.find(c => c.date === selectedDate);
