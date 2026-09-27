@@ -368,13 +368,18 @@ export function HabitTrackerClient() {
             {t.header.xpProgress(userAchievements.totalPoints, nextLevelThreshold, userAchievements.level + 1)}
           </p>
 
-          <div className="hidden shrink-0 overflow-hidden rounded-[12px] border-2 border-border bg-card shadow-hard-xs lg:flex">
+          <div
+            role="group"
+            aria-label={t.languageSwitcher.label}
+            className="hidden shrink-0 overflow-hidden rounded-[12px] border-2 border-border bg-card shadow-hard-xs lg:flex"
+          >
             <button
               type="button"
               onClick={() => setLanguage('ru')}
               aria-label={t.languageSwitcher.russian}
+              aria-pressed={language === 'ru'}
               className={cn(
-                "px-[11px] py-[9px] font-mono text-[11px] uppercase",
+                "px-[11px] py-[9px] font-mono text-[11px] uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 language === 'ru'
                   ? "bg-[#23203A] text-[#F7F1E5] dark:bg-[#F7F1E5] dark:text-[#23203A]"
                   : "bg-transparent text-muted-foreground"
@@ -386,8 +391,9 @@ export function HabitTrackerClient() {
               type="button"
               onClick={() => setLanguage('en')}
               aria-label={t.languageSwitcher.english}
+              aria-pressed={language === 'en'}
               className={cn(
-                "px-[11px] py-[9px] font-mono text-[11px] uppercase",
+                "px-[11px] py-[9px] font-mono text-[11px] uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 language === 'en'
                   ? "bg-[#23203A] text-[#F7F1E5] dark:bg-[#F7F1E5] dark:text-[#23203A]"
                   : "bg-transparent text-muted-foreground"

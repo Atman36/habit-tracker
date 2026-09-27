@@ -128,7 +128,7 @@ export function CategorySettingsDialog({
                     aria-pressed={theme === value}
                     onClick={() => setTheme(value)}
                     className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full border-2 border-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      "flex h-8 w-8 items-center justify-center rounded-full border-2 border-border ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                       theme === value ? "bg-foreground text-background" : "bg-card text-foreground"
                     )}
                   >
@@ -147,7 +147,7 @@ export function CategorySettingsDialog({
                   onClick={() => setLanguage('ru')}
                   aria-pressed={language === 'ru'}
                   className={cn(
-                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     language === 'ru' ? "bg-foreground text-background" : "bg-card text-foreground"
                   )}
                 >
@@ -158,7 +158,7 @@ export function CategorySettingsDialog({
                   onClick={() => setLanguage('en')}
                   aria-pressed={language === 'en'}
                   className={cn(
-                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     language === 'en' ? "bg-foreground text-background" : "bg-card text-foreground"
                   )}
                 >

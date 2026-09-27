@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Achievement, UserAchievements } from '@/lib/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -174,6 +174,20 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
   const t = useTranslations();
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const tabsListRef = useRef<HTMLDivElement>(null);
+
+  // At <sm the tab strip scrolls horizontally instead of wrapping (see TABS_LIST_CLASS
+  // above, review m8). Selecting a tab by keyboard or tap doesn't move that scroll
+  // position on its own, which can leave the newly active tab partly hidden (review m8
+  // follow-up M2). Bring it fully into view whenever the active tab changes; at sm and
+  // up the strip never scrolls, so this is a no-op there.
+  useEffect(() => {
+    const list = tabsListRef.current;
+    if (!list) return;
+    const activeTrigger = list.querySelector('[role="tab"][data-state="active"]');
+    activeTrigger?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [activeTab]);
 
   const unlockedAchievements = achievements.filter(a => a.unlockedAt);
   const lockedAchievements = achievements.filter(a => !a.unlockedAt);
@@ -212,8 +226,8 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
         <div className="overflow-y-auto">
           <UserStats userAchievements={userAchievements} />
 
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className={TABS_LIST_CLASS}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList ref={tabsListRef} className={TABS_LIST_CLASS}>
               <TabsTrigger value="all" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.all}</TabsTrigger>
               <TabsTrigger value="unlocked" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.unlocked}</TabsTrigger>
               <TabsTrigger value="locked" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.inProgress}</TabsTrigger>
