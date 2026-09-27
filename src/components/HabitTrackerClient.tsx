@@ -368,7 +368,7 @@ export function HabitTrackerClient() {
             {t.header.xpProgress(userAchievements.totalPoints, nextLevelThreshold, userAchievements.level + 1)}
           </p>
 
-          <div className="flex shrink-0 overflow-hidden rounded-[12px] border-2 border-border bg-card shadow-hard-xs">
+          <div className="hidden shrink-0 overflow-hidden rounded-[12px] border-2 border-border bg-card shadow-hard-xs lg:flex">
             <button
               type="button"
               onClick={() => setLanguage('ru')}
@@ -549,7 +549,7 @@ export function HabitTrackerClient() {
 
           {habits.length === 0 ? (
             <div className="rounded-card border-2 border-dashed border-border bg-card p-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-panel bg-[#FFE9E3] dark:bg-muted">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFE9E3] dark:bg-muted">
                 <FolderOpen className="h-8 w-8 text-primary" />
               </div>
               <div className="mx-auto mb-6 flex max-w-[220px] flex-col gap-2">
