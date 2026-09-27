@@ -118,16 +118,17 @@ export function CategorySettingsDialog({
             {/* Theme Switcher */}
             <div className="flex items-center justify-between">
               <Label className={SUB_HEADING_CLASS}>{t.categorySettings.themeLabel}</Label>
-              <div className="flex gap-1">
+              <div className="flex gap-1" role="group" aria-label={t.categorySettings.themeLabel}>
                 {THEME_OPTIONS.map(({ value, Icon }) => (
                   <button
                     key={value}
                     type="button"
                     title={t.themeSwitcher[value]}
                     aria-label={t.themeSwitcher[value]}
+                    aria-pressed={theme === value}
                     onClick={() => setTheme(value)}
                     className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full border-2 border-border transition-colors",
+                      "flex h-8 w-8 items-center justify-center rounded-full border-2 border-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                       theme === value ? "bg-foreground text-background" : "bg-card text-foreground"
                     )}
                   >
@@ -144,8 +145,9 @@ export function CategorySettingsDialog({
                 <button
                   type="button"
                   onClick={() => setLanguage('ru')}
+                  aria-pressed={language === 'ru'}
                   className={cn(
-                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors",
+                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     language === 'ru' ? "bg-foreground text-background" : "bg-card text-foreground"
                   )}
                 >
@@ -154,8 +156,9 @@ export function CategorySettingsDialog({
                 <button
                   type="button"
                   onClick={() => setLanguage('en')}
+                  aria-pressed={language === 'en'}
                   className={cn(
-                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors",
+                    "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     language === 'en' ? "bg-foreground text-background" : "bg-card text-foreground"
                   )}
                 >

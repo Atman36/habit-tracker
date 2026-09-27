@@ -38,7 +38,13 @@ const RARITY_ICONS = {
   legendary: Crown
 };
 
-const FILTER_TRIGGER_CLASS = 'rounded-full border-2 border-transparent font-mono text-[11px] uppercase tracking-[0.06em] data-[state=active]:border-border';
+const FILTER_TRIGGER_CLASS = 'shrink-0 rounded-full border-2 border-transparent font-mono text-[11px] uppercase tracking-[0.06em] data-[state=active]:border-border';
+
+// Below sm (375-wide phones), the RU labels don't fit 4 equal grid columns and the text
+// visually bleeds into the next tab (review m8). Scroll horizontally instead of wrapping,
+// so the pill shape is kept; at sm and up this reverts to the original equal-width grid
+// so the 1280 layout is pixel-identical to before this fix.
+const TABS_LIST_CLASS = 'flex w-full items-center justify-start gap-1 overflow-x-auto sm:grid sm:grid-cols-4 sm:gap-0 sm:justify-center sm:overflow-visible';
 
 function AchievementCard({ achievement, isUnlocked }: { achievement: Achievement; isUnlocked: boolean }) {
   const t = useTranslations();
@@ -207,7 +213,7 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
           <UserStats userAchievements={userAchievements} />
 
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className={TABS_LIST_CLASS}>
               <TabsTrigger value="all" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.all}</TabsTrigger>
               <TabsTrigger value="unlocked" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.unlocked}</TabsTrigger>
               <TabsTrigger value="locked" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.inProgress}</TabsTrigger>
