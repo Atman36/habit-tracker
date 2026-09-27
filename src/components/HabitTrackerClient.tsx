@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { Habit, HabitCompletion, OpenRouterSettings, HabitType, HabitStatus, UserDefinedCategory, UserAchievements } from '@/lib/types';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import type { Habit, HabitCompletion, OpenRouterSettings, HabitStatus, UserDefinedCategory, UserAchievements } from '@/lib/types';
 import useLocalStorage from '@/lib/localStorage';
 import { AddHabitDialog } from './AddHabitDialog';
 import { HabitItem } from './HabitItem';
@@ -12,7 +12,7 @@ import { AchievementsShelf } from './AchievementsShelf';
 import { updateUserAchievements, getAllAchievementsWithProgress, calculateUserLevel } from '@/lib/achievements';
 import { Button } from '@/components/ui/button';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { format, parseISO, isValid, subDays, isSameDay, startOfDay, addDays, isToday, isYesterday, startOfWeek, endOfWeek, eachDayOfInterval, isAfter } from 'date-fns';
+import { format, subDays, isSameDay, startOfDay, addDays, isToday, isYesterday, startOfWeek, endOfWeek, eachDayOfInterval, isAfter } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -42,316 +42,18 @@ import {
 import { cn } from '@/lib/utils';
 import { availableIcons, defaultIconKey } from '@/components/icons';
 import { useTranslations, useLanguage } from '@/components/LanguageProvider';
-import type { Language } from '@/lib/translations';
-import { defaultLanguage } from '@/lib/translations';
-import { getLocalizedCategoryName, getGoalFallbackForCategory, getGenericGoalFallback } from '@/lib/iconLocalization';
 import { getDayProgress, getDayProgressColorClass } from '@/lib/dayProgress';
-
+import { formatHabitToMarkdown, parseHabitMarkdown } from '@/lib/habitMarkdown';
+import { recalculateAllStreaks } from '@/lib/streak';
 const EMPTY_USER_ACHIEVEMENTS: UserAchievements = {
   unlockedAchievements: [],
   totalPoints: 0,
   level: 1,
 };
 
-interface ParsedImportData {
-  habits: Omit<Habit, 'id' | 'streak'>[];
-  userCategories: UserDefinedCategory[];
-}
-
-const parseHabitMarkdown = (markdown: string, language: Language = defaultLanguage): ParsedImportData => {
-  const habits: Omit<Habit, 'id' | 'streak'>[] = [];
-  const userCategories: UserDefinedCategory[] = [];
-  
-  const sections = markdown.split(/^# (Habits Export|User Categories Export|Standard Categories Export)$/m);
-  let currentSection: 'habits' | 'user_categories' | 'standard_categories' | null = null;
-
-  for (const sectionContent of sections) {
-    const trimmedContent = sectionContent.trim();
-    if (trimmedContent === 'Habits Export') {
-      currentSection = 'habits';
-      continue;
-    } else if (trimmedContent === 'User Categories Export') {
-      currentSection = 'user_categories';
-      continue;
-    } else if (trimmedContent === 'Standard Categories Export') {
-      // This section is for AI reference, not direct app import, so we skip processing its content.
-      currentSection = 'standard_categories'; 
-      continue;
-    }
-    if (!currentSection || !trimmedContent) continue;
-
-    if (currentSection === 'habits') {
-      // Handle both old format and new category-based format
-      let habitBlocks: string[];
-
-      // Check if the content has category sections
-      if (/## (Категория|Category):/.test(trimmedContent)) {
-        // Normalize English headers to reuse the same parser
-        const normalizedContent = trimmedContent.replace(/^## Category:/gm, '## Категория:');
-        const categoryBlocks = normalizedContent.split(/^## Категория:/m).filter(block => block.trim().length > 0);
-        habitBlocks = [];
-
-        // Extract habit blocks from each category
-        categoryBlocks.forEach(categoryBlock => {
-          const habitBlocksInCategory = categoryBlock.split(/^---$/m)
-            .map(block => block.trim())
-            .filter(block => block.length > 0 && !block.startsWith('Категория:'));
-          habitBlocks.push(...habitBlocksInCategory);
-        });
-      } else {
-        // Old format without categories
-        habitBlocks = trimmedContent.split(/^---$/m)
-          .map(block => block.trim())
-          .filter(block => block.length > 0);
-      }
-      
-      habitBlocks.forEach(block => {
-        const lines = block.split('\n');
-        const habit: Partial<Omit<Habit, 'id' | 'streak'>> & { completions: HabitCompletion[] } = {
-            completions: [],
-            type: 'positive' 
-        };
-        let readingCompletions = false;
-
-        lines.forEach(line => {
-          line = line.trim();
-          // Handle both old and new markdown header formats (## and ###)
-          if (line.startsWith('## ') || line.startsWith('### ')) {
-            habit.name = line.substring(line.indexOf(' ') + 1).trim();
-          } else if (line.startsWith('- Description: ')) {
-            habit.description = line.substring('- Description: '.length).trim();
-          } else if (line.startsWith('- IconKey: ')) { 
-            const iconKey = line.substring('- IconKey: '.length).trim();
-            habit.icon = iconKey || defaultIconKey; 
-          } else if (line.startsWith('- Goal: ')) {
-            habit.goal = line.substring('- Goal: '.length).trim();
-
-            // Generate specific goals if the goal is too generic
-            if (habit.goal === 'цель' || habit.goal.toLowerCase() === 'goal' || !habit.goal) {
-              // Generate a more specific goal based on the habit name and icon
-              const iconKey = habit.icon || defaultIconKey;
-              const iconInfo = availableIcons[iconKey];
-              const habitCategory = iconInfo?.category || 'Общее';
-              const categoryFallback = getGoalFallbackForCategory(habitCategory, language);
-              habit.goal = categoryFallback ?? getGenericGoalFallback(language);
-            }
-          } else if (line.startsWith('- Frequency: ')) {
-            habit.frequency = line.substring('- Frequency: '.length).trim() as Habit['frequency'];
-          } else if (line.startsWith('- Type: ')) {
-            habit.type = line.substring('- Type: '.length).trim() as HabitType;
-          } else if (line.startsWith('- CreatedAt: ')) {
-             const createdAtRaw = line.substring('- CreatedAt: '.length).trim();
-             const createdAtDate = parseISO(createdAtRaw);
-             if (isValid(createdAtDate)) {
-                habit.createdAt = createdAtDate.toISOString();
-             } else {
-                console.warn(`Invalid CreatedAt date "${createdAtRaw}" for habit "${habit.name || 'Unknown'}". Using current date.`);
-                habit.createdAt = new Date().toISOString();
-             }
-          } else if (line.startsWith('- Completions:')) {
-            readingCompletions = true;
-          } else if (readingCompletions && line.startsWith('- date: ')) {
-            const parts = line.substring('- date: '.length).split(' | status: ');
-            const dateRaw = parts[0].trim();
-            const date = isValid(parseISO(dateRaw)) ? dateRaw : null;
-            
-            const statusAndNotes = parts[1]?.split(' (Notes: ');
-            const status = (statusAndNotes?.[0].trim() as HabitStatus) || 'completed';
-            const notes = statusAndNotes?.[1]?.endsWith(')') ? statusAndNotes[1].slice(0, -1).trim() : undefined;
-            
-            const validStatuses: HabitStatus[] = ['completed', 'failed', 'skipped'];
-            const finalStatus = validStatuses.includes(status) ? status : 'completed';
-
-            if (date) { 
-              habit.completions?.push({ date, status: finalStatus, notes });
-            } else if (dateRaw) {
-              console.warn(`Invalid date format "${dateRaw}" in completions for habit "${habit.name || 'Unknown'}". Skipping completion.`);
-            }
-          }
-        });
-
-        if (habit.name && habit.frequency) {
-          if (!habit.icon) habit.icon = defaultIconKey;
-          if (!habit.createdAt) habit.createdAt = new Date().toISOString();
-          if (!habit.type) habit.type = 'positive';
-          if (!habit.goal) habit.goal = getGenericGoalFallback(language);
-          habits.push(habit as Omit<Habit, 'id' | 'streak'>);
-        } else {
-          console.warn("Skipping habit due to missing name or frequency:", habit);
-        }
-      });
-    } else if (currentSection === 'user_categories') {
-        const categoryLines = trimmedContent.split('\n').filter(line => line.startsWith('- id: '));
-        categoryLines.forEach(line => {
-            const idMatch = line.match(/- id: ([\w-]+)/);
-            const nameMatch = line.match(/name: ([^,]+),/);
-            const iconKeyMatch = line.match(/iconKey: ([\w\d_]+)/); 
-
-            if (idMatch && nameMatch && iconKeyMatch) {
-                const id = idMatch[1].trim();
-                const name = nameMatch[1].trim();
-                const iconKey = iconKeyMatch[1].trim();
-                if (availableIcons[iconKey]) { 
-                    userCategories.push({ id, name, iconKey });
-                } else {
-                    console.warn(`Imported user category "${name}" has an invalid or missing iconKey: "${iconKey}". Skipping category.`);
-                }
-            }
-        });
-    }
-  }
-  return { habits, userCategories };
-};
-
-const formatHabitToMarkdown = (
-  habits: Habit[],
-  userCategories: UserDefinedCategory[],
-  language: Language = defaultLanguage
-): string => {
-  let markdown = "# Habits Export\n\n";
-
-  // Group habits by category
-  const habitsByCategory: Record<string, Habit[]> = {};
-  const unknownCategoryKey = language === 'ru' ? 'Без категории' : 'No category';
-
-  // First pass - organize habits by their icon category
-  habits.forEach(habit => {
-    const iconKey = habit.icon || defaultIconKey;
-    const iconInfo = availableIcons[iconKey];
-    
-    if (iconInfo) {
-      const categoryName = iconInfo.category;
-      if (!habitsByCategory[categoryName]) {
-        habitsByCategory[categoryName] = [];
-      }
-      habitsByCategory[categoryName].push(habit);
-    } else {
-      if (!habitsByCategory[unknownCategoryKey]) {
-        habitsByCategory[unknownCategoryKey] = [];
-      }
-      habitsByCategory[unknownCategoryKey].push(habit);
-    }
-  });
-  
-  // Second pass - output habits grouped by category
-  Object.keys(habitsByCategory).sort().forEach(categoryName => {
-    const headingLabel = language === 'ru' ? 'Категория' : 'Category';
-    const displayName = categoryName === unknownCategoryKey
-      ? unknownCategoryKey
-      : getLocalizedCategoryName(categoryName, language);
-    markdown += `## ${headingLabel}: ${displayName}\n\n`;
-
-    habitsByCategory[categoryName].forEach(habit => {
-      markdown += `---\n`;
-      markdown += `### ${habit.name}\n`;
-      if (habit.description) markdown += `- Description: ${habit.description}\n`;
-      markdown += `- IconKey: ${habit.icon || defaultIconKey}\n`; 
-      markdown += `- Goal: ${habit.goal}\n`;
-      markdown += `- Frequency: ${habit.frequency}\n`;
-      markdown += `- Type: ${habit.type || 'positive'}\n`;
-      markdown += `- CreatedAt: ${habit.createdAt}\n`;
-      if (habit.completions.length > 0) {
-        markdown += `- Completions:\n`;
-        [...habit.completions].sort((a,b) => a.date.localeCompare(b.date)).forEach(comp => {
-          markdown += `  - date: ${comp.date} | status: ${comp.status}`;
-          if (comp.notes) markdown += ` (Notes: ${comp.notes})`;
-          markdown += `\n`;
-        });
-      }
-      markdown += `---\n\n`;
-    });
-  });
-
-  if (userCategories.length > 0) {
-    markdown += "# User Categories Export\n\n";
-    userCategories.forEach(category => {
-      markdown += `- id: ${category.id}, name: ${category.name}, iconKey: ${category.iconKey}\n`;
-    });
-    markdown += "\n";
-  }
-
-  markdown += "# Standard Categories Export (for AI reference)\n";
-  markdown += "## This section lists the main categories available in the application.\n";
-  markdown += "## It is intended for AI assistants to correctly assign IconKey to habits.\n";
-  markdown += "## The application itself does not import data from this section.\n\n";
-  
-  // Group icons by category
-  const iconsByCategory: Record<string, {key: string, name: string}[]> = {};
-  Object.entries(availableIcons).forEach(([key, iconOption]) => {
-    const category = iconOption.category;
-    if (!iconsByCategory[category]) {
-      iconsByCategory[category] = [];
-    }
-    iconsByCategory[category].push({key, name: iconOption.name});
-  });
-  
-  // Output grouped categories
-  Object.keys(iconsByCategory).sort().forEach(category => {
-    markdown += `### ${category}\n`;
-    iconsByCategory[category].forEach(icon => {
-      markdown += `- key: ${icon.key}, name: ${icon.name}\n`;
-    });
-    markdown += "\n";
-  });
-
-  return markdown;
-};
 
 
-function calculateStreak(completions: HabitCompletion[], frequency: Habit['frequency'], habitType: HabitType, createdAt: string): number {
-  if (completions.length === 0) return 0;
 
-  const sortedCompletions = [...completions]
-    .filter(c => isValid(parseISO(c.date)))
-    .sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
-
-  const habitStartDate = startOfDay(parseISO(createdAt));
-
-  if (frequency === 'daily') {
-    let streak = 0;
-    let currentDateToCheck = startOfDay(new Date());
-
-    // Don't check days before the habit was created or after today
-    while (currentDateToCheck >= habitStartDate && !isAfter(currentDateToCheck, startOfDay(new Date()))) {
-      const dateToCheckStr = format(currentDateToCheck, 'yyyy-MM-dd');
-      const completionOnDate = sortedCompletions.find(c => c.date === dateToCheckStr);
-
-      if (completionOnDate) {
-        if (completionOnDate.status === 'completed') { // 'completed' means success for both positive & negative
-          streak++;
-        } else if (completionOnDate.status === 'failed') { // 'failed' means failure for both
-          return streak; // Streak broken by a failure, return current accumulated streak before this failure
-        }
-        // 'skipped' does not break streak and does not count towards it.
-      } else {
-        // No completion record for this day.
-        // If this day is today, the streak is based on previous days.
-        // If this day is in the past (but on or after creation), it breaks the streak.
-        if (!isSameDay(currentDateToCheck, startOfDay(new Date()))) { // If it's a past, unmarked day
-             if (currentDateToCheck >= habitStartDate) { // And it's on or after the habit started
-                return streak; // Streak broken
-             }
-        }
-      }
-      currentDateToCheck = subDays(currentDateToCheck, 1);
-    }
-    return streak;
-  } else { 
-    // For non-daily habits, a simpler streak: count consecutive 'completed' from most recent.
-    let nonDailyStreak = 0;
-    for (const comp of sortedCompletions) {
-      if (parseISO(comp.date) < habitStartDate) continue; 
-
-      if (comp.status === 'completed') {
-        nonDailyStreak++;
-      } else if (comp.status === 'failed') {
-        break; 
-      }
-      // Skipped doesn't break or add.
-    }
-    return nonDailyStreak;
-  }
-}
 
 export function HabitTrackerClient() {
   const [habits, setHabits] = useLocalStorage<Habit[]>('habits', []);
@@ -396,9 +98,7 @@ export function HabitTrackerClient() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   useEffect(() => setMounted(true), []);
   
-  const recalculateAllStreaks = useCallback((currentHabits: Habit[]): Habit[] => {
-    return currentHabits.map(h => ({ ...h, streak: calculateStreak(h.completions, h.frequency, h.type, h.createdAt) }));
-  }, []);
+
 
   const addHabit = (newHabitData: Omit<Habit, 'id' | 'completions' | 'createdAt' | 'streak'>) => {
     const newHabit: Habit = {
@@ -535,51 +235,45 @@ export function HabitTrackerClient() {
   };
 
   const handleImportHabits = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const resetFileInput = () => {
+      event.target.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const markdownContent = e.target?.result as string;
-          const { habits: importedHabitData, userCategories: importedUserCategories } = parseHabitMarkdown(markdownContent, language);
-
-          const newHabitsWithIdsAndStreak = importedHabitData.map(hData => ({
-            ...hData,
-            id: crypto.randomUUID(),
-            createdAt: hData.createdAt || new Date().toISOString(), 
-            type: hData.type || 'positive',
-            icon: hData.icon || defaultIconKey, 
-            completions: (hData.completions || []).map(c => ({...c, status: c.status || 'completed'})),
-            streak: 0, 
-          }));
-          
-          setHabits(recalculateAllStreaks(newHabitsWithIdsAndStreak)); 
-          
-          if (importedUserCategories.length > 0) {
-            setUserCategories(prevUserCategories => {
-              const existingIds = new Set(prevUserCategories.map(uc => uc.id));
-              const newUniqueCategories = importedUserCategories.filter(iuc => {
-                if (!availableIcons[iuc.iconKey]) { 
-                  console.warn(`Imported user category "${iuc.name}" uses an invalid iconKey "${iuc.iconKey}". Skipping this user category.`);
-                  return false;
-                }
-                return !existingIds.has(iuc.id);
-              });
-              return [...prevUserCategories, ...newUniqueCategories];
-            });
-          }
-          toast({ title: t.toasts.importSuccessTitle, description: t.toasts.importSuccessDescription(newHabitsWithIdsAndStreak.length) });
-        } catch (error) {
-          console.error("Error importing data:", error);
-          toast({ title: t.toasts.importErrorTitle, description: t.toasts.importErrorDescription, variant: 'destructive' });
-        } finally {
-            if (fileInputRef.current) {
-                fileInputRef.current.value = ""; 
-            }
-        }
-      };
-      reader.readAsText(file);
+    if (!file) {
+      resetFileInput();
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      try {
+        const markdownContent = loadEvent.target?.result;
+        if (typeof markdownContent !== 'string') throw new Error('Import did not produce text');
+        const { habits: importedHabitData, userCategories: importedUserCategories } = parseHabitMarkdown(markdownContent, language);
+        const newHabitsWithIdsAndStreak = importedHabitData.map(habit => ({
+          ...habit,
+          id: crypto.randomUUID(),
+          streak: 0,
+        }));
+        const recalculatedHabits = recalculateAllStreaks(newHabitsWithIdsAndStreak);
+
+        setHabits(recalculatedHabits);
+        setUserCategories(importedUserCategories);
+        toast({ title: t.toasts.importSuccessTitle, description: t.toasts.importSuccessDescription(recalculatedHabits.length) });
+      } catch (error) {
+        console.error('Error importing data:', error);
+        toast({ title: t.toasts.importErrorTitle, description: t.toasts.importErrorDescription, variant: 'destructive' });
+      } finally {
+        resetFileInput();
+      }
+    };
+    reader.onerror = () => {
+      toast({ title: t.toasts.importErrorTitle, description: t.toasts.importErrorDescription, variant: 'destructive' });
+      resetFileInput();
+    };
+    reader.onabort = reader.onerror;
+    reader.readAsText(file);
   };
 
   const handleSaveApiSettings = (settings: OpenRouterSettings) => {
@@ -674,13 +368,18 @@ export function HabitTrackerClient() {
             {t.header.xpProgress(userAchievements.totalPoints, nextLevelThreshold, userAchievements.level + 1)}
           </p>
 
-          <div className="flex shrink-0 overflow-hidden rounded-[12px] border-2 border-border bg-card shadow-hard-xs">
+          <div
+            role="group"
+            aria-label={t.languageSwitcher.label}
+            className="hidden shrink-0 overflow-hidden rounded-[12px] border-2 border-border bg-card shadow-hard-xs lg:flex"
+          >
             <button
               type="button"
               onClick={() => setLanguage('ru')}
               aria-label={t.languageSwitcher.russian}
+              aria-pressed={language === 'ru'}
               className={cn(
-                "px-[11px] py-[9px] font-mono text-[11px] uppercase",
+                "px-[11px] py-[9px] font-mono text-[11px] uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 language === 'ru'
                   ? "bg-[#23203A] text-[#F7F1E5] dark:bg-[#F7F1E5] dark:text-[#23203A]"
                   : "bg-transparent text-muted-foreground"
@@ -692,8 +391,9 @@ export function HabitTrackerClient() {
               type="button"
               onClick={() => setLanguage('en')}
               aria-label={t.languageSwitcher.english}
+              aria-pressed={language === 'en'}
               className={cn(
-                "px-[11px] py-[9px] font-mono text-[11px] uppercase",
+                "px-[11px] py-[9px] font-mono text-[11px] uppercase ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 language === 'en'
                   ? "bg-[#23203A] text-[#F7F1E5] dark:bg-[#F7F1E5] dark:text-[#23203A]"
                   : "bg-transparent text-muted-foreground"
@@ -855,7 +555,7 @@ export function HabitTrackerClient() {
 
           {habits.length === 0 ? (
             <div className="rounded-card border-2 border-dashed border-border bg-card p-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-panel bg-[#FFE9E3] dark:bg-muted">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FFE9E3] dark:bg-muted">
                 <FolderOpen className="h-8 w-8 text-primary" />
               </div>
               <div className="mx-auto mb-6 flex max-w-[220px] flex-col gap-2">

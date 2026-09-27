@@ -71,7 +71,7 @@ export function HabitItem({
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 1000 : 'auto',
-    position: 'relative' as 'relative', // Ensure type correctness for style prop
+    position: 'relative' as const, // Ensure type correctness for style prop
   };
 
   const completionForSelectedDate = habit.completions.find(c => c.date === selectedDate);
@@ -159,7 +159,6 @@ export function HabitItem({
         isFuture: isAfter(startOfDay(day), startOfDay(now)),
       };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habit.completions]);
   const weekDoneCount = weekBatteryDays.filter(d => d.isDone).length;
 
@@ -198,7 +197,7 @@ export function HabitItem({
           type="button"
           role="checkbox"
           aria-checked={isCompletedOnSelectedDate}
-          onClick={() => handleAction(isCompletedOnSelectedDate ? 'failed' : 'completed')}
+          onClick={() => handleAction('completed')}
           aria-label={isCompletedOnSelectedDate
             ? (habit.type === 'positive' ? t.habitItem.aria.markedComplete : t.habitItem.aria.markedResisted)
             : (habit.type === 'positive' ? t.habitItem.aria.markComplete : t.habitItem.aria.markResisted)}

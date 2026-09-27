@@ -24,7 +24,6 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       console.error(error);
     }
     // Only re-sync from storage when the key itself changes; not on every storedValue update.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
   const setValue = useCallback((value: T | ((val: T) => T)) => {

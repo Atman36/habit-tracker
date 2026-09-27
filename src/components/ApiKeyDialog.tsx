@@ -97,7 +97,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-[488px]">
         <DialogHeader>
           <DialogTitle className="font-display uppercase flex items-center">
             <Settings className="mr-2 h-5 w-5" />
@@ -118,6 +118,9 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="apiKey"
+                type="password"
+                autoComplete="new-password"
+                spellCheck={false}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="pl-10"
@@ -155,7 +158,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, currentSettings }: ApiKe
             )}
 
             <p className="text-xs text-muted-foreground">
-              {t.apiDialog.modelHelper}
+              {t.apiDialog.modelHelper} {t.apiDialog.modelHelperCustom}
             </p>
           </div>
 

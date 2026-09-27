@@ -25,6 +25,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, [language, setLanguage]);
 
+  useEffect(() => {
+    document.documentElement.lang = resolvedLanguage;
+  }, [resolvedLanguage]);
+
   const value = useMemo(
     () => ({ language: resolvedLanguage, setLanguage }),
     [resolvedLanguage, setLanguage]

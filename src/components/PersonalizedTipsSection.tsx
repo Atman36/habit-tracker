@@ -69,7 +69,7 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-4">
           <Button
             onClick={handleFetchTips}
             disabled={isLoading || habits.length === 0}

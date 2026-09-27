@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Achievement, UserAchievements } from '@/lib/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -38,7 +38,13 @@ const RARITY_ICONS = {
   legendary: Crown
 };
 
-const FILTER_TRIGGER_CLASS = 'rounded-full border-2 border-transparent font-mono text-[11px] uppercase tracking-[0.06em] data-[state=active]:border-border';
+const FILTER_TRIGGER_CLASS = 'shrink-0 rounded-full border-2 border-transparent font-mono text-[11px] uppercase tracking-[0.06em] data-[state=active]:border-border';
+
+// Below sm (375-wide phones), the RU labels don't fit 4 equal grid columns and the text
+// visually bleeds into the next tab (review m8). Scroll horizontally instead of wrapping,
+// so the pill shape is kept; at sm and up this reverts to the original equal-width grid
+// so the 1280 layout is pixel-identical to before this fix.
+const TABS_LIST_CLASS = 'flex w-full items-center justify-start gap-1 overflow-x-auto sm:grid sm:grid-cols-4 sm:gap-0 sm:justify-center sm:overflow-visible';
 
 function AchievementCard({ achievement, isUnlocked }: { achievement: Achievement; isUnlocked: boolean }) {
   const t = useTranslations();
@@ -168,6 +174,20 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
   const t = useTranslations();
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const tabsListRef = useRef<HTMLDivElement>(null);
+
+  // At <sm the tab strip scrolls horizontally instead of wrapping (see TABS_LIST_CLASS
+  // above, review m8). Selecting a tab by keyboard or tap doesn't move that scroll
+  // position on its own, which can leave the newly active tab partly hidden (review m8
+  // follow-up M2). Bring it fully into view whenever the active tab changes; at sm and
+  // up the strip never scrolls, so this is a no-op there.
+  useEffect(() => {
+    const list = tabsListRef.current;
+    if (!list) return;
+    const activeTrigger = list.querySelector('[role="tab"][data-state="active"]');
+    activeTrigger?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [activeTab]);
 
   const unlockedAchievements = achievements.filter(a => a.unlockedAt);
   const lockedAchievements = achievements.filter(a => !a.unlockedAt);
@@ -194,19 +214,20 @@ export function AchievementsDialog({ achievements, userAchievements, trigger }: 
         {trigger || defaultTrigger}
       </DialogTrigger>
 
-      <DialogContent className="max-w-[760px] max-h-[80vh] overflow-hidden">
+      <DialogContent className="max-w-[808px] max-h-[80vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="font-display uppercase flex items-center gap-2">
             <Trophy className="h-5 w-5" />
             {t.achievements.title}
           </DialogTitle>
+          <DialogDescription>{t.achievements.subtitle}</DialogDescription>
         </DialogHeader>
 
         <div className="overflow-y-auto">
           <UserStats userAchievements={userAchievements} />
 
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList ref={tabsListRef} className={TABS_LIST_CLASS}>
               <TabsTrigger value="all" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.all}</TabsTrigger>
               <TabsTrigger value="unlocked" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.unlocked}</TabsTrigger>
               <TabsTrigger value="locked" className={FILTER_TRIGGER_CLASS}>{t.achievements.tabs.inProgress}</TabsTrigger>

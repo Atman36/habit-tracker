@@ -12,7 +12,6 @@ import {
   subWeeks,
   isSameDay,
   isBefore,
-  isAfter,
   startOfDay,
 } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
@@ -23,6 +22,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 import { getDayProgress, getDayProgressColorClass } from '@/lib/dayProgress';
+import { calculateWeeklyStats } from '@/lib/weeklyProgress';
 
 interface WeeklyProgressProps {
   habits: Habit[];
@@ -76,20 +76,10 @@ export function WeeklyProgress({ habits }: WeeklyProgressProps) {
     });
   }, [weekInterval, habits, dateLocale]);
 
-  const weeklyStats = useMemo(() => {
-    let totalCompleted = 0;
-    let totalPossible = 0;
-    daysOfWeekData.forEach(day => {
-      totalCompleted += day.completedHabitsCount;
-      totalPossible += day.activeHabitsCount;
-    });
-    const overallPercentage = totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
-    return {
-      totalCompleted,
-      totalPossible,
-      overallPercentage,
-    };
-  }, [daysOfWeekData]);
+  const weeklyStats = useMemo(
+    () => calculateWeeklyStats(daysOfWeekData),
+    [daysOfWeekData],
+  );
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1));

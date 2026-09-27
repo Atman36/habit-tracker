@@ -8,6 +8,7 @@ import { TrendingUp, Repeat, Award, BarChartBig, type LucideIcon } from 'lucide-
 import { cn } from '@/lib/utils';
 import React from 'react';
 import { useTranslations, useLanguage } from '@/components/LanguageProvider';
+import { formatStreakUnit } from '@/lib/formatStreakUnit';
 
 interface StatsOverviewProps {
   habits: Habit[];
@@ -91,8 +92,6 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
     return t.stats.motivational.keepGoing;
   };
 
-  const streakUnit = language === 'ru' ? ' дн.' : ' days';
-
   const metricTiles: MetricTile[] = [
     {
       label: t.stats.cards.completionRate,
@@ -103,14 +102,14 @@ export function StatsOverview({ habits }: StatsOverviewProps) {
     },
     {
       label: t.stats.cards.averageStreak,
-      value: `${averageStreak}${streakUnit}`,
+      value: `${averageStreak}${formatStreakUnit(averageStreak, language)}`,
       icon: Repeat,
       tileClassName: "bg-background/10 border-background/20",
       iconClassName: "text-primary",
     },
     {
       label: t.stats.cards.bestStreak,
-      value: `${bestStreak}${streakUnit}`,
+      value: `${bestStreak}${formatStreakUnit(bestStreak, language)}`,
       icon: Award,
       // Amber is a fixed light color in both themes, so text must stay ink —
       // theme-aware text-foreground turns near-white in dark mode (unreadable on amber).

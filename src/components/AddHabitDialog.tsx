@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -212,7 +211,7 @@ export function AddHabitDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[420px]">
+      <DialogContent className="sm:max-w-[468px]">
         <DialogHeader>
           <DialogTitle className="font-display uppercase">{existingHabit ? t.addHabit.dialog.editTitle : t.addHabit.dialog.addTitle}</DialogTitle>
           <DialogDescription>
@@ -221,6 +220,12 @@ export function AddHabitDialog({
             <span className="text-xs text-muted-foreground">{t.addHabit.instructionsHint}</span>
           </DialogDescription>
         </DialogHeader>
+        <div className="flex gap-2 rounded-panel border-2 border-border bg-amber/20 p-3 text-xs">
+          <Info className="h-4 w-4 shrink-0" />
+          <p>
+            <strong>{t.addHabit.dialog.goalHeading}</strong> {t.addHabit.dialog.goalHint}
+          </p>
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -296,7 +301,7 @@ export function AddHabitDialog({
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="w-full max-w-[calc(100vw-1.5rem)]">
                         <ScrollArea className="h-[300px]">
                           {userCategories.length > 0 && (
                             <SelectGroup>
@@ -309,7 +314,7 @@ export function AddHabitDialog({
                                     key={uniqueValue}
                                     value={uniqueValue}
                                     title={uc.name}
-                                    className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-muted"
+                                    className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-accent dark:data-[state=checked]:text-accent-foreground"
                                   >
                                     <div className="flex items-center gap-2">
                                       <IconComp className="h-4 w-4" />
@@ -340,7 +345,7 @@ export function AddHabitDialog({
                                       key={uniqueValue}
                                       value={uniqueValue}
                                       title={getLocalizedIconName(iconOption.key, language)}
-                                      className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-muted"
+                                      className="data-[state=checked]:bg-[#F0EBFF] dark:data-[state=checked]:bg-accent dark:data-[state=checked]:text-accent-foreground"
                                     >
                                         <div className="flex items-center gap-2">
                                         <IconComp className="h-4 w-4" />
@@ -361,12 +366,6 @@ export function AddHabitDialog({
               }}
             />
 
-            <div className="flex gap-2 rounded-panel border-2 border-border bg-amber/20 p-3 text-xs">
-              <Info className="h-4 w-4 shrink-0" />
-              <p>
-                <strong>{t.addHabit.dialog.goalHeading}</strong> {t.addHabit.dialog.goalHint}
-              </p>
-            </div>
             <FormField
               control={form.control}
               name="goal"
@@ -421,8 +420,8 @@ export function AddHabitDialog({
                         type="button"
                         onClick={() => field.onChange('positive')}
                         className={cn(
-                          "flex flex-col items-center gap-2 rounded-panel border-2 border-border bg-card p-3 text-sm font-medium transition-colors",
-                          field.value === 'positive' && "border-secondary bg-[#F0EBFF] !shadow-[0_2px_0_hsl(var(--secondary))] dark:bg-muted"
+                          "flex flex-col items-center gap-2 rounded-field border-2 border-border bg-card p-3 text-sm font-medium transition-colors",
+                          field.value === 'positive' && "bg-success-3 text-accent-foreground shadow-hard-sm"
                         )}
                       >
                         <Dumbbell className="h-5 w-5" />
@@ -432,8 +431,8 @@ export function AddHabitDialog({
                         type="button"
                         onClick={() => field.onChange('negative')}
                         className={cn(
-                          "flex flex-col items-center gap-2 rounded-panel border-2 border-border bg-card p-3 text-sm font-medium transition-colors",
-                          field.value === 'negative' && "border-secondary bg-[#F0EBFF] !shadow-[0_2px_0_hsl(var(--secondary))] dark:bg-muted"
+                          "flex flex-col items-center gap-2 rounded-field border-2 border-border bg-card p-3 text-sm font-medium transition-colors",
+                          field.value === 'negative' && "bg-success-3 text-accent-foreground shadow-hard-sm"
                         )}
                       >
                         <Ban className="h-5 w-5" />
