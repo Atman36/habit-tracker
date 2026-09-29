@@ -23,7 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
 import { Separator } from '@/components/ui/separator';
 import { useTranslations, useLanguage } from '@/components/LanguageProvider';
-import { getLocalizedIconName } from '@/lib/iconLocalization';
+import { getLocalizedIconName, getLocalizedCategoryName } from '@/lib/iconLocalization';
 
 interface CategorySettingsDialogProps {
   isOpen: boolean;
@@ -279,7 +279,7 @@ export function CategorySettingsDialog({
                     <div className="p-2 space-y-2">
                     {Object.entries(groupedAvailableIcons).map(([categoryName, iconsInCategory]) => (
                       <div key={categoryName}>
-                        <p className={cn(SUB_HEADING_CLASS, "px-1 py-1")}>{categoryName}</p>
+                        <p className={cn(SUB_HEADING_CLASS, "px-1 py-1")}>{getLocalizedCategoryName(categoryName, language)}</p>
                         <div className="grid grid-cols-6 gap-1.5 px-1">
                           {iconsInCategory.map((iconOption) => {
                             const IconComp = iconOption.icon;

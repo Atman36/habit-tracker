@@ -391,6 +391,7 @@ export function AddHabitDialog({
                         <button
                           key={option.value}
                           type="button"
+                          aria-pressed={field.value === option.value}
                           onClick={() => field.onChange(option.value)}
                           className={cn(
                             "rounded-full border-2 border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] transition-colors",
@@ -418,6 +419,7 @@ export function AddHabitDialog({
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
+                        aria-pressed={field.value === 'positive'}
                         onClick={() => field.onChange('positive')}
                         className={cn(
                           "flex flex-col items-center gap-2 rounded-field border-2 border-border bg-card p-3 text-sm font-medium transition-colors",
@@ -429,6 +431,7 @@ export function AddHabitDialog({
                       </button>
                       <button
                         type="button"
+                        aria-pressed={field.value === 'negative'}
                         onClick={() => field.onChange('negative')}
                         className={cn(
                           "flex flex-col items-center gap-2 rounded-field border-2 border-border bg-card p-3 text-sm font-medium transition-colors",

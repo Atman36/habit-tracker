@@ -23,6 +23,10 @@ interface ToastTranslations {
   importSuccessDescription: (count: number) => string;
   importErrorTitle: string;
   importErrorDescription: string;
+  importConfirmTitle: string;
+  importConfirmDescription: string;
+  importConfirmCancel: string;
+  importConfirmConfirm: string;
   aiSettingsSavedTitle: string;
   aiSettingsSavedDescription: string;
 }
@@ -175,6 +179,7 @@ interface PersonalizedTipsTranslations {
   settingsLabel: string;
   configure: string;
   missingApiKey: string;
+  requestFailed: string;
   noHabits: string;
   errorTitle: string;
   tipsTitle: string;
@@ -363,6 +368,10 @@ export const translations: Record<Language, TranslationContent> = {
       importSuccessDescription: (count) => `${count} habits were imported successfully.`,
       importErrorTitle: 'Import error',
       importErrorDescription: 'We could not parse that file. Please verify the format.',
+      importConfirmTitle: 'Replace current data?',
+      importConfirmDescription: 'Importing replaces all current habits and categories with the contents of the file. This cannot be undone.',
+      importConfirmCancel: 'Cancel',
+      importConfirmConfirm: 'Replace',
       aiSettingsSavedTitle: 'AI settings saved',
       aiSettingsSavedDescription: 'You can now request personalized tips with the selected model.',
     },
@@ -512,6 +521,7 @@ export const translations: Record<Language, TranslationContent> = {
       settingsLabel: 'OpenRouter settings:',
       configure: 'Configure',
       missingApiKey: 'OpenRouter API key is not configured. Add it and choose a model.',
+      requestFailed: 'Failed to fetch tips. Check your connection and try again.',
       noHabits: 'Add at least one habit to get tips.',
       errorTitle: 'Error',
       tipsTitle: 'Your personalized tips:',
@@ -652,6 +662,10 @@ export const translations: Record<Language, TranslationContent> = {
       importSuccessDescription: (count) => `${count} привычек успешно импортировано.`,
       importErrorTitle: 'Ошибка импорта',
       importErrorDescription: 'Не удалось обработать файл. Убедитесь, что формат корректен.',
+      importConfirmTitle: 'Заменить текущие данные?',
+      importConfirmDescription: 'Импорт заменит все текущие привычки и категории содержимым файла. Действие нельзя отменить.',
+      importConfirmCancel: 'Отмена',
+      importConfirmConfirm: 'Заменить',
       aiSettingsSavedTitle: 'Настройки AI сохранены',
       aiSettingsSavedDescription: 'Теперь вы можете получать советы с выбранной моделью.',
     },
@@ -801,6 +815,7 @@ export const translations: Record<Language, TranslationContent> = {
       settingsLabel: 'Настройки OpenRouter:',
       configure: 'Настроить',
       missingApiKey: 'API ключ OpenRouter не настроен. Добавьте его и выберите модель.',
+      requestFailed: 'Не удалось получить советы. Проверьте соединение и попробуйте ещё раз.',
       noHabits: 'Добавьте хотя бы одну привычку, чтобы получить советы.',
       errorTitle: 'Ошибка',
       tipsTitle: 'Ваши персональные советы:',

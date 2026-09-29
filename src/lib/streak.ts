@@ -23,7 +23,7 @@ const periodKey = (day: Date, frequency: HabitFrequency) => format(periodStart(d
 export function calculateStreak(
   completions: HabitCompletion[],
   frequency: HabitFrequency,
-  _habitType: HabitType,
+  habitType: HabitType,
   createdAt: string,
   now: Date = new Date(),
 ): number {
@@ -53,7 +53,9 @@ export function calculateStreak(
     } else if (status === 'failed') {
       return streak;
     } else if (!status && !isCurrentPeriod) {
-      return streak;
+      // Negative ("avoid") habits: an untracked day/period means the user did not
+      // relapse (or simply did not log), so it must not break the streak.
+      if (habitType !== 'negative') return streak;
     }
 
     period = previousPeriod(period, frequency);

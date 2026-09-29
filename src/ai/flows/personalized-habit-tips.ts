@@ -145,20 +145,22 @@ async function callOpenRouterAPI(
         content = jsonMatch[0];
     }
 
+    let parsedContent: unknown;
     try {
-      const parsedContent = JSON.parse(content);
-      const validationResult = PersonalizedHabitTipsOutputSchema.safeParse(parsedContent);
-      if (!validationResult.success) {
-        console.error("OpenRouter response validation error for model", modelToUse, ":", validationResult.error.flatten());
-        console.error("Raw content from AI:", content);
-        throw new Error("AI service response did not match expected format.");
-      }
-      return validationResult.data;
+      parsedContent = JSON.parse(content);
     } catch (e) {
       console.error("Error parsing JSON from OpenRouter response for model", modelToUse, ":", e);
       console.error("Raw content from AI:", content);
       throw new Error("Failed to process response from AI service.");
     }
+
+    const validationResult = PersonalizedHabitTipsOutputSchema.safeParse(parsedContent);
+    if (!validationResult.success) {
+      console.error("OpenRouter response validation error for model", modelToUse, ":", validationResult.error.flatten());
+      console.error("Raw content from AI:", content);
+      throw new Error("AI service response did not match expected format.");
+    }
+    return validationResult.data;
 
   } catch (error) {
     console.error("Error calling OpenRouter API for model", modelToUse, ":", error);

@@ -1,5 +1,6 @@
 import type { Habit, Achievement, AchievementType, UserAchievements } from './types';
-import { format, startOfDay, subDays } from 'date-fns';
+import { addDays, format, startOfDay, subDays } from 'date-fns';
+import { recalculateAllStreaks } from './streak';
 
 // Definition of every available achievement
 export const AVAILABLE_ACHIEVEMENTS: Omit<Achievement, 'id' | 'unlockedAt' | 'progress'>[] = [
@@ -149,12 +150,75 @@ function createUnlockedAchievement(
 }
 
 // Points awarded based on achievement rarity
-const RARITY_POINTS = {
+const RARITY_POINTS: Record<Achievement['rarity'], number> = {
   common: 10,
   rare: 25,
   epic: 50,
-  legendary: 100
+  legendary: 100,
 };
+
+export const EMPTY_USER_ACHIEVEMENTS: UserAchievements = {
+  unlockedAchievements: [],
+  totalPoints: 0,
+  level: 1,
+};
+
+function isStoredAchievement(value: unknown): value is Achievement {
+  if (typeof value !== 'object' || value === null) return false;
+  if (
+    !('id' in value) ||
+    typeof value.id !== 'string' ||
+    !('type' in value) ||
+    typeof value.type !== 'string' ||
+    !Object.prototype.hasOwnProperty.call(ACHIEVEMENT_TEMPLATE_MAP, value.type) ||
+    !('name' in value) ||
+    typeof value.name !== 'string' ||
+    !('description' in value) ||
+    typeof value.description !== 'string' ||
+    !('badgeIcon' in value) ||
+    typeof value.badgeIcon !== 'string' ||
+    !('rarity' in value) ||
+    typeof value.rarity !== 'string' ||
+    !Object.prototype.hasOwnProperty.call(RARITY_POINTS, value.rarity)
+  ) {
+    return false;
+  }
+
+  return (
+    (!('unlockedAt' in value) ||
+      value.unlockedAt === undefined ||
+      typeof value.unlockedAt === 'string') &&
+    (!('progress' in value) ||
+      value.progress === undefined ||
+      (typeof value.progress === 'number' && Number.isFinite(value.progress))) &&
+    (!('maxProgress' in value) ||
+      value.maxProgress === undefined ||
+      (typeof value.maxProgress === 'number' && Number.isFinite(value.maxProgress))) &&
+    (!('category' in value) ||
+      value.category === undefined ||
+      typeof value.category === 'string')
+  );
+}
+
+function isStoredUserAchievements(value: unknown): value is UserAchievements {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'unlockedAchievements' in value &&
+    Array.isArray(value.unlockedAchievements) &&
+    value.unlockedAchievements.every(isStoredAchievement) &&
+    'totalPoints' in value &&
+    typeof value.totalPoints === 'number' &&
+    Number.isFinite(value.totalPoints) &&
+    'level' in value &&
+    typeof value.level === 'number' &&
+    Number.isFinite(value.level)
+  );
+}
+
+export function normalizeStoredUserAchievements(value: unknown): UserAchievements {
+  return isStoredUserAchievements(value) ? value : EMPTY_USER_ACHIEVEMENTS;
+}
 
 // Level calculation based on the user's total points
 export function calculateUserLevel(totalPoints: number): number {
@@ -252,8 +316,11 @@ function checkWeekendWarriorAchievement(habits: Habit[]): Achievement | null {
   
   // Check the last eight weeks
   for (let week = 0; week < 8; week++) {
-    const saturday = subDays(currentDate, currentDate.getDay() - 6);
-    const sunday = subDays(currentDate, currentDate.getDay());
+    // Saturday of the Sun–Sat week containing currentDate, then its Sunday.
+    // (getDay()+1)%7 maps Sun→1, Mon→2, … Sat→0, so both days always belong
+    // to the same (most recent) weekend instead of pairing two different weeks.
+    const saturday = subDays(currentDate, (currentDate.getDay() + 1) % 7);
+    const sunday = addDays(saturday, 1);
     
     const saturdayStr = format(saturday, 'yyyy-MM-dd');
     const sundayStr = format(sunday, 'yyyy-MM-dd');
@@ -378,6 +445,46 @@ export function updateUserAchievements(
     totalPoints,
     level
   };
+}
+
+export function deriveUserAchievements(
+  habits: Habit[],
+  currentUserAchievements: UserAchievements,
+  now: Date = new Date(),
+): UserAchievements {
+  return updateUserAchievements(
+    recalculateAllStreaks(habits, now),
+    currentUserAchievements,
+  );
+}
+
+// Content equality that relies on updateUserAchievements carrying already-unlocked
+// achievements by reference: equal points, level and element references means equal.
+export function isSameUserAchievements(a: UserAchievements, b: UserAchievements): boolean {
+  return (
+    Object.is(a.totalPoints, b.totalPoints) &&
+    Object.is(a.level, b.level) &&
+    a.unlockedAchievements.length === b.unlockedAchievements.length &&
+    a.unlockedAchievements.every((achievement, index) => achievement === b.unlockedAchievements[index])
+  );
+}
+
+// Decide what to persist under 'unlocked_achievements'.
+// - null until hydration of `habits` and the stored achievements has landed: on the
+//   first (hydration) render both are still placeholders, so writing the computed
+//   value would clobber the stored state and erase unlocked achievements on mount.
+// - null when nothing changed: updateUserAchievements returns a fresh wrapper object
+//   on every run, so unchanged content must not trigger a state/storage write.
+// - otherwise `computed`: existing achievements are carried by reference with their
+//   original unlockedAt; only genuinely new unlocks produce a write.
+export function getAchievementsToPersist(
+  hydrated: boolean,
+  stored: UserAchievements,
+  computed: UserAchievements
+): UserAchievements | null {
+  if (!hydrated) return null;
+  if (isSameUserAchievements(stored, computed)) return null;
+  return computed;
 }
 
 // Return every achievement, including progress for locked ones
