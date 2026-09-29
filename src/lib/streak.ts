@@ -33,6 +33,7 @@ export function calculateStreak(
 
   const statuses = new Map<string, { day: Date; status: HabitCompletion['status'] }>();
   for (const completion of completions) {
+    if (typeof completion.date !== 'string' || completion.date === '') continue;
     const day = toLocalDay(completion.date);
     if (!day || isAfter(day, today) || isAfter(createdDay, day)) continue;
     const key = periodKey(day, frequency);

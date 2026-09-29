@@ -185,9 +185,9 @@ function isStoredAchievement(value: unknown): value is Achievement {
   }
 
   return (
-    (!('unlockedAt' in value) ||
-      value.unlockedAt === undefined ||
-      typeof value.unlockedAt === 'string') &&
+    // Stored unlocked achievements must carry a stamp: the UI decides "unlocked" by unlockedAt.
+    'unlockedAt' in value &&
+    typeof value.unlockedAt === 'string' &&
     (!('progress' in value) ||
       value.progress === undefined ||
       (typeof value.progress === 'number' && Number.isFinite(value.progress))) &&
@@ -200,13 +200,14 @@ function isStoredAchievement(value: unknown): value is Achievement {
   );
 }
 
-function isStoredUserAchievements(value: unknown): value is UserAchievements {
+function isStoredUserAchievementsShape(
+  value: unknown,
+): value is { unlockedAchievements: unknown[]; totalPoints: number; level: number } {
   return (
     typeof value === 'object' &&
     value !== null &&
     'unlockedAchievements' in value &&
     Array.isArray(value.unlockedAchievements) &&
-    value.unlockedAchievements.every(isStoredAchievement) &&
     'totalPoints' in value &&
     typeof value.totalPoints === 'number' &&
     Number.isFinite(value.totalPoints) &&
@@ -216,8 +217,16 @@ function isStoredUserAchievements(value: unknown): value is UserAchievements {
   );
 }
 
+// Invalid elements are dropped one by one so a single bad record cannot erase the rest
+// of the user's earned history at the next unlock; a broken outer shape still falls back.
 export function normalizeStoredUserAchievements(value: unknown): UserAchievements {
-  return isStoredUserAchievements(value) ? value : EMPTY_USER_ACHIEVEMENTS;
+  if (!isStoredUserAchievementsShape(value)) return EMPTY_USER_ACHIEVEMENTS;
+
+  return {
+    unlockedAchievements: value.unlockedAchievements.filter(isStoredAchievement),
+    totalPoints: value.totalPoints,
+    level: value.level,
+  };
 }
 
 // Level calculation based on the user's total points

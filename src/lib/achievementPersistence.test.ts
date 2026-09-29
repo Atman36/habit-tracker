@@ -48,12 +48,71 @@ test('an object without an achievement array falls back to the empty state', () 
   assert.deepEqual(normalizeStoredUserAchievements({}), EMPTY);
 });
 
-test('an achievement with an unknown rarity falls back to the empty state', () => {
+test('an achievement with an unknown rarity is dropped while the stored totals are kept', () => {
   assert.deepEqual(normalizeStoredUserAchievements({
     unlockedAchievements: [{ ...seededCreator, rarity: 'mythic' }],
     totalPoints: 10,
     level: 1,
+  }), { unlockedAchievements: [], totalPoints: 10, level: 1 });
+});
+
+test('one invalid element does not discard the valid ones, and the next unlock keeps them', () => {
+  const normalized = normalizeStoredUserAchievements({
+    unlockedAchievements: [
+      { ...seededCreator, id: 'bad-rarity', rarity: 'mythic' },
+      seededCreator,
+      null,
+    ],
+    totalPoints: 10,
+    level: 1,
+  });
+  assert.equal(normalized.unlockedAchievements.length, 1);
+  assert.equal(normalized.unlockedAchievements[0], seededCreator);
+  assert.equal(normalized.totalPoints, 10);
+  assert.equal(normalized.level, 1);
+
+  // A legitimate unlock (7-day streak) on top of the normalized value still carries the creator.
+  const streaky = { ...habit('streaky'), streak: 7 };
+  const afterUnlock = updateUserAchievements([streaky], normalized);
+  assert.equal(afterUnlock.unlockedAchievements[0], seededCreator);
+  assert.deepEqual(afterUnlock.unlockedAchievements.map(a => a.type), ['habit_creator', 'first_week']);
+});
+
+test('a non-array achievement list still falls back to the empty state', () => {
+  assert.deepEqual(normalizeStoredUserAchievements({
+    unlockedAchievements: { 0: seededCreator },
+    totalPoints: 10,
+    level: 1,
   }), EMPTY);
+});
+
+test('a stored element with an unknown achievement type is dropped while a valid sibling is kept', () => {
+  const normalized = normalizeStoredUserAchievements({
+    unlockedAchievements: [
+      { ...seededCreator, id: 'unknown-type', type: 'not_a_real_type' },
+      { ...seededCreator, id: 'proto-type', type: '__proto__' },
+      seededCreator,
+    ],
+    totalPoints: 10,
+    level: 1,
+  });
+  assert.deepEqual(normalized.unlockedAchievements, [seededCreator]);
+});
+
+test('a stored element without unlockedAt is dropped because the UI would treat it as locked', () => {
+  const withoutUnlockedAt: Record<string, unknown> = { ...seededCreator };
+  delete withoutUnlockedAt.unlockedAt;
+  const normalized = normalizeStoredUserAchievements({
+    unlockedAchievements: [
+      withoutUnlockedAt,
+      { ...seededCreator, id: 'undefined-stamp', unlockedAt: undefined },
+      { ...seededCreator, id: 'numeric-stamp', unlockedAt: 5 },
+      seededCreator,
+    ],
+    totalPoints: 10,
+    level: 1,
+  });
+  assert.deepEqual(normalized.unlockedAchievements, [seededCreator]);
 });
 
 test('non-finite achievement totals fall back without causing repeat writes', () => {
@@ -132,4 +191,10 @@ test('isSameUserAchievements detects fresh-but-equal wrappers and added achievem
   const streaky = { ...habit('streaky'), streak: 7 };
   const withNewUnlock = updateUserAchievements([streaky], storedWithCreator);
   assert.equal(isSameUserAchievements(storedWithCreator, withNewUnlock), false);
+});
+
+test('isSameUserAchievements treats two wrappers with NaN totals as the same', () => {
+  const a: UserAchievements = { unlockedAchievements: [seededCreator], totalPoints: Number.NaN, level: 1 };
+  const b: UserAchievements = { unlockedAchievements: [seededCreator], totalPoints: Number.NaN, level: 1 };
+  assert.equal(isSameUserAchievements(a, b), true);
 });
