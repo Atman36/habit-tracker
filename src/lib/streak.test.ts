@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { calculateStreak, recalculateAllStreaks } from './streak';
+import type { Habit, HabitCompletion } from './types';
 
 const createdAt = new Date(2026, 0, 1, 12).toISOString();
 const completion = (date: string, status: 'completed' | 'failed' | 'skipped' = 'completed') => ({ date, status });
@@ -86,4 +87,26 @@ test('all-habit recalculation replaces stale streaks after a frequency edit', ()
     completions: [completion('2026-03-16'), completion('2026-03-09')],
   }];
   assert.equal(recalculateAllStreaks(habits, now)[0].streak, 1);
+});
+
+test('completions without a usable date are skipped instead of crashing the streak', () => {
+  const now = new Date(2026, 2, 18, 12);
+  const dateless = { status: 'completed' } as unknown as HabitCompletion;
+  const badDates = [null, '', 123].map(date => ({ date, status: 'completed' }) as unknown as HabitCompletion);
+
+  assert.equal(calculateStreak([dateless], 'daily', 'positive', createdAt, now), 0);
+  assert.equal(calculateStreak([dateless, ...badDates, completion('2026-03-17'), completion('2026-03-16')], 'daily', 'positive', createdAt, now), 2);
+
+  const habit = {
+    id: 'legacy',
+    name: 'Legacy',
+    icon: 'CheckCircle',
+    goal: 'Goal',
+    frequency: 'daily',
+    type: 'positive',
+    createdAt,
+    streak: 9,
+    completions: [dateless, completion('2026-03-17')],
+  } as Habit;
+  assert.deepEqual(recalculateAllStreaks([habit], now).map(h => h.streak), [1]);
 });
