@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import type { Habit, HabitCompletion, OpenRouterSettings, HabitStatus, UserDefinedCategory, UserAchievements } from '@/lib/types';
+import type { Habit, HabitCompletion, OpenRouterSettings, HabitStatus, UserDefinedCategory } from '@/lib/types';
 import useLocalStorage from '@/lib/localStorage';
 import { AddHabitDialog } from './AddHabitDialog';
 import { HabitItem } from './HabitItem';
@@ -9,7 +9,14 @@ import { PersonalizedTipsSection } from './PersonalizedTipsSection';
 import { StatsOverview } from './StatsOverview';
 import { WeeklyProgress } from './WeeklyProgress';
 import { AchievementsShelf } from './AchievementsShelf';
-import { updateUserAchievements, getAllAchievementsWithProgress, calculateUserLevel } from '@/lib/achievements';
+import {
+  calculateUserLevel,
+  deriveUserAchievements,
+  EMPTY_USER_ACHIEVEMENTS,
+  getAchievementsToPersist,
+  getAllAchievementsWithProgress,
+  normalizeStoredUserAchievements,
+} from '@/lib/achievements';
 import { Button } from '@/components/ui/button';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { format, subDays, isSameDay, startOfDay, addDays, isToday, isYesterday, startOfWeek, endOfWeek, eachDayOfInterval, isAfter } from 'date-fns';
@@ -33,6 +40,16 @@ import {
 import { CalendarDays, ChevronLeft, ChevronRight, FolderOpen, ListChecks, Download, Upload, Settings, Plus, Flame } from 'lucide-react';
 import { ApiKeyDialog } from './ApiKeyDialog';
 import { CategorySettingsDialog } from './CategorySettingsDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -45,11 +62,6 @@ import { useTranslations, useLanguage } from '@/components/LanguageProvider';
 import { getDayProgress, getDayProgressColorClass } from '@/lib/dayProgress';
 import { formatHabitToMarkdown, parseHabitMarkdown } from '@/lib/habitMarkdown';
 import { recalculateAllStreaks } from '@/lib/streak';
-const EMPTY_USER_ACHIEVEMENTS: UserAchievements = {
-  unlockedAchievements: [],
-  totalPoints: 0,
-  level: 1,
-};
 
 
 
@@ -95,6 +107,13 @@ export function HabitTrackerClient() {
   const [showWeeklyProgressSection, setShowWeeklyProgressSection] = useLocalStorage<boolean>('show_weekly_progress_section', true);
   
   const [openRouterSettings, setOpenRouterSettings] = useLocalStorage<OpenRouterSettings | null>('openrouter_settings', null);
+  const [rawStoredUserAchievements, setStoredUserAchievements] = useLocalStorage<unknown>('unlocked_achievements', EMPTY_USER_ACHIEVEMENTS);
+  const storedUserAchievements = useMemo(
+    () => normalizeStoredUserAchievements(rawStoredUserAchievements),
+    [rawStoredUserAchievements],
+  );
+  // Parsed import waiting for user confirmation before it replaces all data (see confirmImport).
+  const [pendingImport, setPendingImport] = useState<{ habits: Habit[]; userCategories: UserDefinedCategory[] } | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   useEffect(() => setMounted(true), []);
   
@@ -258,9 +277,9 @@ export function HabitTrackerClient() {
         }));
         const recalculatedHabits = recalculateAllStreaks(newHabitsWithIdsAndStreak);
 
-        setHabits(recalculatedHabits);
-        setUserCategories(importedUserCategories);
-        toast({ title: t.toasts.importSuccessTitle, description: t.toasts.importSuccessDescription(recalculatedHabits.length) });
+        // Import is destructive (replaces all habits and categories) — require
+        // explicit confirmation via the AlertDialog before applying it.
+        setPendingImport({ habits: recalculatedHabits, userCategories: importedUserCategories });
       } catch (error) {
         console.error('Error importing data:', error);
         toast({ title: t.toasts.importErrorTitle, description: t.toasts.importErrorDescription, variant: 'destructive' });
@@ -274,6 +293,14 @@ export function HabitTrackerClient() {
     };
     reader.onabort = reader.onerror;
     reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+    if (!pendingImport) return;
+    setHabits(pendingImport.habits);
+    setUserCategories(pendingImport.userCategories);
+    toast({ title: t.toasts.importSuccessTitle, description: t.toasts.importSuccessDescription(pendingImport.habits.length) });
+    setPendingImport(null);
   };
 
   const handleSaveApiSettings = (settings: OpenRouterSettings) => {
@@ -308,13 +335,26 @@ export function HabitTrackerClient() {
     setSelectedDate(startOfDay(subDays(new Date(), 2)));
   };
 
-  // Достижения/уровень: производные данные из habits (см. lib/achievements.ts).
-  // Не персистентны — пересчитываются от пустой базы при каждом изменении habits.
+  // Достижения/уровень: разблокировки персистентны в localStorage под ключом
+  // 'unlocked_achievements'; unlockedAt проставляется один раз при первой разблокировке,
+  // а достижение не отзывается, если позже условие перестаёт выполняться.
   // Хуки обязаны выполняться до раннего return (Rules of Hooks).
   const userAchievements = useMemo(
-    () => updateUserAchievements(habits, EMPTY_USER_ACHIEVEMENTS),
-    [habits]
+    () => deriveUserAchievements(habits, storedUserAchievements),
+    [habits, storedUserAchievements]
   );
+  useEffect(() => {
+    // `mounted` flips in the same commit in which useLocalStorage applies the stored
+    // `habits` and `unlocked_achievements`, so once it is true both memo inputs are
+    // the real persisted state. Writing any earlier would clobber storage with
+    // placeholder-derived content (see getAchievementsToPersist). Persist only real
+    // changes: updateUserAchievements returns a fresh object on every run, so
+    // unchanged content must not produce a state or localStorage write.
+    const next = getAchievementsToPersist(mounted, storedUserAchievements, userAchievements);
+    if (next !== null) {
+      setStoredUserAchievements(next);
+    }
+  }, [mounted, storedUserAchievements, userAchievements, setStoredUserAchievements]);
   const achievementsWithProgress = useMemo(
     () => getAllAchievementsWithProgress(habits, userAchievements),
     [habits, userAchievements]
@@ -651,6 +691,24 @@ export function HabitTrackerClient() {
         showWeeklyProgressSection={showWeeklyProgressSection}
         onShowWeeklyProgressSectionToggle={setShowWeeklyProgressSection}
       />
+
+      <AlertDialog
+        open={pendingImport !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingImport(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.toasts.importConfirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{t.toasts.importConfirmDescription}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t.toasts.importConfirmCancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmImport}>{t.toasts.importConfirmConfirm}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -203,7 +203,7 @@ export function HabitItem({
             : (habit.type === 'positive' ? t.habitItem.aria.markComplete : t.habitItem.aria.markResisted)}
           className={cn(
             "flex items-center justify-center h-5 w-5 rounded-full border-2 border-border flex-shrink-0",
-            isCompletedOnSelectedDate ? (habit.type === 'negative' ? "bg-secondary text-secondary-foreground" : "bg-success-3 text-foreground") : "bg-card"
+            isCompletedOnSelectedDate ? (habit.type === 'negative' ? "bg-secondary text-secondary-foreground" : "bg-success-3 text-accent-foreground") : "bg-card"
           )}
         >
           {isCompletedOnSelectedDate && <Check className="h-3 w-3" />}
@@ -362,7 +362,7 @@ export function HabitItem({
           aria-label={isCompletedOnSelectedDate ? t.habitItem.aria.markedComplete : t.habitItem.aria.markComplete}
           className={cn(
             "flex items-center justify-center h-[22px] w-[22px] rounded-[6px] border-2 border-border",
-            isCompletedOnSelectedDate ? (habit.type === 'negative' ? "bg-secondary text-secondary-foreground" : "bg-success-3 text-foreground") : "bg-card text-muted-foreground"
+            isCompletedOnSelectedDate ? (habit.type === 'negative' ? "bg-secondary text-secondary-foreground" : "bg-success-3 text-accent-foreground") : "bg-card text-muted-foreground"
           )}
         >
           <Check className="h-3 w-3" />

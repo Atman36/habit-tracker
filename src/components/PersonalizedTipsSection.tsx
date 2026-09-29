@@ -41,18 +41,24 @@ export function PersonalizedTipsSection({ habits, openRouterSettings, onOpenSett
         systemPrompt: openRouterSettings.systemPrompt || undefined, // Pass systemPrompt if set
     };
 
-    const result = await fetchPersonalizedHabitTipsAction(habits, settingsForAction);
+    try {
+      const result = await fetchPersonalizedHabitTipsAction(habits, settingsForAction);
 
-    if ('error' in result) {
-      const apiError = result as ApiError;
-      setError(apiError.error);
-      if (apiError.code === 'API_KEY_INVALID' || apiError.code === 'API_KEY_MISSING' || apiError.code === 'MODEL_NAME_MISSING') {
-        onOpenSettingsDialog();
+      if ('error' in result) {
+        const apiError = result as ApiError;
+        setError(apiError.error);
+        if (apiError.code === 'API_KEY_INVALID' || apiError.code === 'API_KEY_MISSING' || apiError.code === 'MODEL_NAME_MISSING') {
+          onOpenSettingsDialog();
+        }
+      } else {
+        setTips(result.tips);
       }
-    } else {
-      setTips(result.tips);
+    } catch (e) {
+      console.error('Failed to fetch personalized tips:', e);
+      setError(t.personalizedTips.requestFailed);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

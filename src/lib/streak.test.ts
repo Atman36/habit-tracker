@@ -60,6 +60,18 @@ test('date-only and local timestamp completions share the same local-day behavio
   );
 });
 
+test('negative habit treats missing daily entries as neutral instead of breaking the streak', () => {
+  const now = new Date(2026, 2, 18, 12); // Wednesday
+  // Completed Monday, untracked Tuesday, today not logged yet → Monday still counts.
+  assert.equal(calculateStreak([completion('2026-03-16')], 'daily', 'negative', createdAt, now), 1);
+  // Completed Monday, untracked Tuesday, completed today → both count.
+  assert.equal(calculateStreak([completion('2026-03-16'), completion('2026-03-18')], 'daily', 'negative', createdAt, now), 2);
+  // A relapse (failed) still breaks the streak.
+  assert.equal(calculateStreak([completion('2026-03-16'), completion('2026-03-17', 'failed')], 'daily', 'negative', createdAt, now), 0);
+  // Explicitly skipped days stay neutral as well.
+  assert.equal(calculateStreak([completion('2026-03-16'), completion('2026-03-17', 'skipped')], 'daily', 'negative', createdAt, now), 1);
+});
+
 test('all-habit recalculation replaces stale streaks after a frequency edit', () => {
   const now = new Date(2026, 2, 18, 12);
   const habits = [{
